@@ -1,18 +1,19 @@
 var $ = require('jquery');
-var World = require('./world');
 var Renderer = require('./systems/renderer');
 var InputManager = require('./systems/inputmanager');
+var register = require('./macros/getgame').register;
+var EntityManager = require('./entitymanager');
 
 //params
 //container: jquery container for game window, defaults to $('#container')
 //window: window object, used for resize events, defaults to window
 //renderer: provide a renderer, Game will create one by default
 //inputManager: provide a input manager, Game will create one by default
-
+//skipRegister: skip registering for game singleton, setting this true will stop macros will funcitoning, defaults to false
 var Game = function(params) {
     params = params || {};
 
-    this.world = new World();
+    this.entityManager = new EntityManager();
 
     this.systems = [];
 
@@ -26,6 +27,11 @@ var Game = function(params) {
     });
     this.systems.push(this.inputManager);
 
+    var skipRegister = params.skipRegister || false;
+    if (!skipRegister) {
+        register(this);
+    }
+
     //focus container by default
     container.focus();
 };
@@ -36,12 +42,15 @@ Game.prototype = {
     tick: function(elapsedTime) {
         var self = this;
         this.systems.forEach(function(system) {
-            system.tick(self.world, elapsedTime);
+            system.tick(self.entityManager, elapsedTime);
         });
     },
 
-    addEntity: function(entity) {
-        this.world.addEntity(entity);
+    afterTick: function() {
+        var self = this;
+        this.systems.forEach(function(system) {
+            system.afterTick();
+        });
     }
 };
 

@@ -1,30 +1,40 @@
 var uuid = require('uuid-v4');
 var _ = require('lodash');
 var TransformComponent = require('./components/transformcomponent');
+var getGame = require('./macros/getgame');
 
 var Entity = function() {
     this.id = uuid();
 
-    //transform component
     //every entity has a transform component to position within the world
+    //add to component after init
     this.transform = new TransformComponent();
-
-    this.components = [this.transformComponent];
 };
 
 Entity.prototype = {
     constructor: Entity,
 
+    afterInit: function() {
+        this.addComponent(this.transform);
+    },
+
     addComponent: function(component) {
-        this.components.push(component);
+        var game = getGame();
+        if (game != null) {
+            game.entityManager.addComponent(this, component);
+        }
     },
 
     removeComponent: function(component) {
-        _.pull(this.components, component);
+        var game = getGame();
+        if (game != null) {
+            game.entityManager.removeComponent(component.id);
+        }
     },
 
-    get: function(type) {
-        return _.find(this.components, function(component) {
+    getComponent: function(type) {
+        var components = getGame().entityManager.getComponents(this.id);
+        return _.find(components, function(component) {
             return component instanceof type;
         });
     }

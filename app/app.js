@@ -6,6 +6,10 @@ window.onload = function() {
     var Entity = require('../core/entity');
     var RenderComponent = require('../core/components/rendercomponent');
     var InputComponent = require('../core/components/inputcomponent');
+    var runGame = require('../core/rungame');
+
+    var MoveCameraWithMouse = require('./movecamerawithmouse');
+    var addEntity = require('../core/macros/addEntity');
 
     var game = new Game({
         keyMap: {
@@ -15,6 +19,8 @@ window.onload = function() {
     });
 
     var cube = new Entity();
+    addEntity(cube);
+    
     cube.transform.position.z = -1000;
     cube.jump = function() {
         this.transform.position.y += 100;
@@ -40,16 +46,9 @@ window.onload = function() {
     inputComponent.bindEvent('down', 'keydown', cube, 'moveDown');
     cube.addComponent(inputComponent);
 
-    game.addEntity(cube);
+    //move camera with mouse
+    var cameraComponent = new MoveCameraWithMouse();
+    cube.addComponent(cameraComponent);
 
-    var frameInterval = 1000 / 24.0;
-
-    var interval = function() {
-        game.tick(frameInterval);
-
-        setTimeout(interval, frameInterval);
-    }
-
-    interval();
-
+    runGame(game);
 };

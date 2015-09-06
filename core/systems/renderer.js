@@ -1,7 +1,10 @@
 var RenderComponent = require("../components/rendercomponent");
 var THREE = require("three");
+var System = require('../system');
 
 var Renderer = function(container, window) {
+    System.call(this);
+
     this.container = container;
     this.window = window;
 
@@ -18,38 +21,33 @@ var Renderer = function(container, window) {
     container.append(this.renderer.domElement);
 };
 
-Renderer.prototype = {
-    constructor: Renderer,
+Renderer.prototype = Object.create(System.prototype);
+Renderer.prototype.constructor = Renderer;
 
-    isDrawable: function(entity) {
-        return entity.get(RenderComponent) != null;
-    },
+Renderer.prototype.tick = function(entitySystem) {
+    var self = this;
 
-    tick: function(world) {
-        var self = this;
+    entitySystem.getEntities().forEach(function(entity) {
+        var renderComponent = entity.getComponent(RenderComponent);
 
-        world.entities.forEach(function(entity) {
-            var renderComponent = entity.get(RenderComponent);
+        //ignore entities with no render components
+        if (renderComponent == null) {
+            return;
+        }
 
-            //ignore entities with no render components
-            if (renderComponent == null) {
-                return;
-            }
+        //add object to scene
+        if (!renderComponent.addedToScene) {
+            self.scene.add(renderComponent.object);
+            renderComponent.addedToScene = true;
+        }
 
-            //add object to scene
-            if (!renderComponent.addedToScene) {
-                self.scene.add(renderComponent.object);
-                renderComponent.addedToScene = true;
-            }
+        //copy position, rotation and scale from entity
+        renderComponent.object.position.copy(entity.transform.position);
+        renderComponent.object.rotation.copy(entity.transform.rotation);
+        renderComponent.object.scale.copy(entity.transform.scale);
+    });
 
-            //copy position, rotation and scale from entity
-            renderComponent.object.position.copy(entity.transform.position);
-            renderComponent.object.rotation.copy(entity.transform.rotation);
-            renderComponent.object.scale.copy(entity.transform.scale);
-        });
-
-        this.renderer.render(this.scene, this.camera);
-    }
-}
+    this.renderer.render(this.scene, this.camera);
+};
 
 module.exports = Renderer;

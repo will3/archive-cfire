@@ -37,6 +37,16 @@ Chunk.prototype = {
         return this.map[x][y][z];
     },
 
+    visit: function(callback) {
+        for (var x in this.map) {
+            for (var y in this.map[x]) {
+                for (var z in this.map[x][y]) {
+                    callback(x, y, z, this.map[x][y][z]);
+                }
+            }
+        }
+    },
+
     //populate map with data
     populateMap: function(data) {
         var blocks = data.blocks;

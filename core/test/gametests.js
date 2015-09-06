@@ -33,8 +33,8 @@ describe('Game', function() {
 
             game.systems = [sys1.object, sys2.object];
 
-            sys1.expects('tick').withArgs(game.world);
-            sys2.expects('tick').withArgs(game.world);
+            sys1.expects('tick');
+            sys2.expects('tick');
 
             game.tick();
 
