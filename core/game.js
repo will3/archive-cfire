@@ -1,6 +1,10 @@
 var $ = require('jquery');
+var _ = require('lodash');
+
 var Renderer = require('./systems/renderer');
 var InputManager = require('./systems/inputmanager');
+var ScriptManager = require('./systems/scriptmanager');
+
 var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
 var registerGame = require('./macros/getgame').register;
@@ -31,6 +35,9 @@ var Game = function(params) {
     });
     this.systems.push(this.inputManager);
 
+    this.scriptManager = new ScriptManager();
+    this.systems.push(this.scriptManager);
+
     var skipRegisterGame = params.skipRegisterGame || false;
     if (!skipRegisterGame) {
         registerGame(this);
@@ -57,19 +64,13 @@ Game.prototype = {
         this.systems.forEach(function(system) {
             system.tick(self.entityManager, elapsedTime);
         });
-
-        //tick entities and components
-        //this is so that components and entities gets ticked if implemented
-        this.entityManager.tick();
     },
 
     afterTick: function() {
         var self = this;
         this.systems.forEach(function(system) {
-            system.afterTick();
+            system.afterTick(self.entityManager);
         });
-
-        this.entityManager.afterTick();
     }
 };
 

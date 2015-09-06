@@ -6,47 +6,45 @@ var EntityManager = function() {
     }
 
     //entity look up
-    this.entities = {};
+    this.entityMap = {};
 
     //components look up
-    this.components = {};
+    this.componentMap = {};
 };
 
 EntityManager.prototype = {
     constructor: EntityManager,
 
     addEntity: function(entity, parent) {
-        this.entities[entity.id] = {
+        this.entityMap[entity.id] = {
             entity: entity,
-            entities: [],
-            components: [],
+            entityIds: [],
+            componentIds: [],
             parentId: null
         };
 
         if (parent != null) {
-            this.entities[entity.id].parentId = parent.id;
-            this.entities[parent.id].entities.push(entity.id);
+            this.entityMap[entity.id].parentId = parent.id;
+            this.entityMap[parent.id].entityIds.push(entity.id);
         } else {
             //add to root
             this.root.entityIds.push(entity.id);
         }
-
-        entity.afterInit();
     },
 
     removeEntity: function(id) {
-        var map = this.entities[id];
+        var map = this.entityMap[id];
         var self = this;
-        map.entities.forEach(function(childEntityId) {
+        map.entityIds.forEach(function(childEntityId) {
             self.removeEntity(childEntityId);
         });
-        delete this.entities[id];
-        map.components.forEach(function(componentId) {
+        delete this.entityMap[id];
+        map.componentIds.forEach(function(componentId) {
             self.removeComponent(componentId);
         });
         if (map.parentId != null) {
-            var parentMap = this.entities[map.parentId];
-            _.pull(parentMap.entities, id);
+            var parentMap = this.entityMap[map.parentId];
+            _.pull(parentMap.entityIds, id);
         } else {
             //remove from root
             _.pull(this.root, id);
@@ -54,23 +52,23 @@ EntityManager.prototype = {
     },
 
     removeComponent: function(id) {
-        var map = this.components[id];
+        var map = this.componentMap[id];
         var entityId = map.entityId;
-        var entityMap = this.entities[entityId];
+        var entityMap = this.entityMap[entityId];
         if (entityMap != null) {
-            _.pull(entityMap.components, id);
+            _.pull(entityMap.componentIds, id);
         }
-        delete this.components[id];
+        delete this.componentMap[id];
     },
 
     getEntity: function(id) {
-        var map = this.entities[id];
+        var map = this.entityMap[id];
         return map == null ? null : map.entity;
     },
 
     getParentEntity: function(id) {
-        var parentId = this.entities[id].parentId;
-        return this.entities[parentId].entity;
+        var parentId = this.entityMap[id].parentId;
+        return this.entityMap[parentId].entity;
     },
 
     getEntityIds: function(id) {
@@ -78,8 +76,8 @@ EntityManager.prototype = {
             return this.root.entityIds;
         }
 
-        var map = this.entities[id];
-        return map.entities;
+        var map = this.entityMap[id];
+        return map.entityIds;
     },
 
     getEntities: function(id) {
@@ -90,55 +88,31 @@ EntityManager.prototype = {
             });
         }
 
-        var map = this.entities[id];
-        return _.map(map.entities, function(childEntityId) {
+        var map = this.entityMap[id];
+        return _.map(map.entityIds, function(childEntityId) {
             return self.getEntity(childEntityId);
         });
     },
 
     addComponent: function(entity, component) {
-        var map = this.entities[entity.id];
-        map.components.push(component.id);
-        this.components[component.id] = {
+        var map = this.entityMap[entity.id];
+        map.componentIds.push(component.id);
+        this.componentMap[component.id] = {
             component: component,
             entityId: entity.id
         };
     },
 
     getComponent: function(id) {
-        var map = this.components[id];
+        var map = this.componentMap[id];
         return map == null ? null : map.component;
     },
 
     getComponents: function(id) {
-        var map = this.entities[id];
+        var map = this.entityMap[id];
         var self = this;
-        return _.map(map.components, function(componentId) {
+        return _.map(map.componentIds, function(componentId) {
             return self.getComponent(componentId);
-        });
-    },
-
-    tick: function() {
-        var self = this;
-        this.getEntityIds().forEach(function(rootEntityId) {
-            self.visitEntity(rootEntityId, function(entity) {
-                var components = self.getComponents(entity.id);
-                components.forEach(function(component) {
-                    component.tick();
-                });
-            });
-        });
-    },
-
-    afterTick: function() {
-        var self = this;
-        this.getEntityIds().forEach(function(rootEntityId) {
-            self.visitEntity(rootEntityId, function(entity) {
-                var components = self.getComponents(entity.id);
-                components.forEach(function(component) {
-                    component.afterTick();
-                });
-            });
         });
     },
 

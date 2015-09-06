@@ -14,10 +14,6 @@ var Entity = function() {
 Entity.prototype = {
     constructor: Entity,
 
-    afterInit: function() {
-        this.addComponent(this.transform);
-    },
-
     addComponent: function(component) {
         var game = getGame();
         if (game != null) {

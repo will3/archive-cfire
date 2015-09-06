@@ -9,6 +9,7 @@ try {
 var InputComponent = require('../components/inputcomponent');
 var System = require('../system');
 var InputState = require('../inputstate');
+var keycode = require('keycode');
 
 //params
 //keyMap        key map to load, defaults to {}
@@ -48,7 +49,8 @@ InputManager.prototype = Object.create(System.prototype);
 InputManager.prototype.constructor = InputManager;
 
 InputManager.prototype.handleKeydown = function(e) {
-    var key = String.fromCharCode(e.keyCode).toLowerCase();
+    this.inputState.keyEvents.push(e);
+    var key = keycode(e).toLowerCase();
 
     if (!this.inputState.keyhold(key)) {
         this.inputState.keydowns.push(key);
@@ -57,7 +59,8 @@ InputManager.prototype.handleKeydown = function(e) {
 };
 
 InputManager.prototype.handleKeyup = function(e) {
-    var key = String.fromCharCode(e.keyCode).toLowerCase();
+    this.inputState.keyEvents.push(e);
+    var key = keycode(e).toLowerCase();
 
     if (!this.inputState.keyup(key)) {
         this.inputState.keyups.push(key);
