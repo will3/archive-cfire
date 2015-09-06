@@ -4,7 +4,6 @@ var InputManager = require('./systems/inputmanager');
 var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
 var registerGame = require('./macros/getgame').register;
-var registerInput = require('./macros/getinput').register;
 
 //params
 //container: jquery container for game window, defaults to $('#container')
@@ -25,7 +24,6 @@ var Game = function(params) {
     this.systems.push(this.renderer);
 
     this.inputState = new InputState();
-    registerInput(this.inputState);
 
     this.inputManager = params.inputManager || new InputManager({
         keyMap: params.keyMap || {},
@@ -44,6 +42,14 @@ var Game = function(params) {
 
 Game.prototype = {
     constructor: Game,
+
+    get input() {
+        return this.inputState;
+    },
+
+    get camera() {
+        return this.renderer.camera;
+    },
 
     tick: function(elapsedTime) {
         var self = this;

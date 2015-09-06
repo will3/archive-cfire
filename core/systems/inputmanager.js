@@ -18,6 +18,8 @@ var InputManager = function(params) {
 
     this.mouseLastX = null;
     this.mouseLastY = null;
+    this.mouseLastDragX = null;
+    this.mouseLastDragY = null;
 
     params = params || {};
 
@@ -76,16 +78,18 @@ InputManager.prototype.handleMousemove = function(e) {
     if (this.mouseLastX == null || this.mouseLastY == null) {
         this.mouseLastX = e.clientX;
         this.mouseLastY = e.clientY;
-        return;
     }
 
-    this.inputState.mouseMoveX = e.clientX - this.mouseLastX;
-    this.inputState.mouseMoveY = e.clientY - this.mouseLastY;
+    this.inputState.mouseMoveX += (e.clientX - this.mouseLastX);
+    this.inputState.mouseMoveY += (e.clientY - this.mouseLastY);
 
     if (this.inputState.mousedown) {
-        this.inputState.mouseDragX = this.inputState.mouseMoveX;
-        this.inputState.mouseDragY = this.inputState.mouseMoveY;
+        this.inputState.mouseDragX += (e.clientX - this.mouseLastX);
+        this.inputState.mouseDragY += (e.clientY - this.mouseLastY);
     }
+
+    this.mouseLastX = e.clientX;
+    this.mouseLastY = e.clientY;
 };
 
 InputManager.prototype.handleMouseleave = function() {

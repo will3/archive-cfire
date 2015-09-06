@@ -11,6 +11,7 @@ var Renderer = function(container, window) {
     this.scene = new THREE.Scene();
 
     this.camera = new THREE.PerspectiveCamera(75, this.window.innerWidth / this.window.innerHeight, 1, 10000);
+    this.camera.rotation.order = 'YXZ';
 
     this.renderer = new THREE.WebGLRenderer();
 
