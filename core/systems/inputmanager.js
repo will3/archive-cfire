@@ -8,43 +8,38 @@ try {
 
 var InputComponent = require('../components/inputcomponent');
 var System = require('../system');
+var InputState = require('../inputstate');
 
 //params
-//keyMap    key map to load, defaults to {}
+//keyMap        key map to load, defaults to {}
+//inputState    inputState to manage, this instance is assigned to this.inputState, by default create default instance
 var InputManager = function(params) {
     System.call(this);
-
-    params = params || {};
-
-    this.keyMap = params.keyMap || {};
-
-    this.keydowns = [];
-    this.keyups = [];
-    this.keyholds = [];
-
-    this.mousedown = false;
-
-    this.mouseMoveX = 0;
-    this.mouseMoveY = 0;
-    this.mouseDragX = 0;
-    this.mouseDragY = 0;
 
     this.mouseLastX = null;
     this.mouseLastY = null;
 
+    params = params || {};
+
+    this.keyMap = params.keyMap || {};
+    this.inputState = params.inputState || new InputState();
+
+    var self = this;
     var bindKeyboardFunc = params.bindKeyboardFunc || function() {
-        $(window).keydown(this.handleKeydown.bind(this));
-        $(window).keyup(this.handleKeyup.bind(this));
-    }.bind(this);
+        $(window).keydown(self.handleKeydown.bind(self));
+        $(window).keyup(self.handleKeyup.bind(self));
+    };
+
     bindKeyboardFunc();
 
     var bindMouseFunc = params.bindMouseFunc || function() {
-        $(window).mousemove(this.handleMousemove.bind(this));
-        $(window).mousedown(this.handleMousedown.bind(this));
-        $(window).mouseup(this.handleMouseup.bind(this));
-        $(window).mouseleave(this.handleMouseleave.bind(this));
+        $(window).mousemove(self.handleMousemove.bind(self));
+        $(window).mousedown(self.handleMousedown.bind(self));
+        $(window).mouseup(self.handleMouseup.bind(self));
+        $(window).mouseleave(self.handleMouseleave.bind(self));
     };
 
+    bindMouseFunc();
 };
 
 InputManager.prototype = Object.create(System.prototype);
@@ -53,28 +48,28 @@ InputManager.prototype.constructor = InputManager;
 InputManager.prototype.handleKeydown = function(e) {
     var key = String.fromCharCode(e.keyCode).toLowerCase();
 
-    if (!_.includes(this.keyholds, key)) {
-        this.keydowns.push(key);
-        this.keyholds.push(key);
+    if (!this.inputState.keyhold(key)) {
+        this.inputState.keydowns.push(key);
+        this.inputState.keyholds.push(key);
     }
 };
 
 InputManager.prototype.handleKeyup = function(e) {
     var key = String.fromCharCode(e.keyCode).toLowerCase();
 
-    if (!_.includes(this.keyups, key)) {
-        this.keyups.push(key);
+    if (!this.inputState.keyup(key)) {
+        this.inputState.keyups.push(key);
     }
 
-    _.pull(this.keyholds, key);
+    _.pull(this.inputState.keyholds, key);
 };
 
 InputManager.prototype.handleMousedown = function() {
-    this.mousedown = true;
+    this.inputState.mousedown = true;
 };
 
 InputManager.prototype.handleMouseup = function() {
-    this.mousedown = false;
+    this.inputState.mousedown = false;
 };
 
 InputManager.prototype.handleMousemove = function(e) {
@@ -84,17 +79,17 @@ InputManager.prototype.handleMousemove = function(e) {
         return;
     }
 
-    this.mouseMoveX = e.clientX - this.mouseLastX;
-    this.mouseMoveY = e.clientY - this.mouseLastY;
+    this.inputState.mouseMoveX = e.clientX - this.mouseLastX;
+    this.inputState.mouseMoveY = e.clientY - this.mouseLastY;
 
-    if (this.mousedown) {
-        this.mouseDragX = this.mouseMoveX;
-        this.mouseDragY = this.mouseMoveY;
+    if (this.inputState.mousedown) {
+        this.inputState.mouseDragX = this.inputState.mouseMoveX;
+        this.inputState.mouseDragY = this.inputState.mouseMoveY;
     }
 };
 
 InputManager.prototype.handleMouseleave = function() {
-    this.mousedown = false;
+    this.inputState.mousedown = false;
 };
 
 InputManager.prototype.tick = function(entitySystem) {
@@ -116,20 +111,14 @@ InputManager.prototype.tick = function(entitySystem) {
 
 InputManager.prototype.afterTick = function() {
     //clear temporary control states
-    this.keydowns = [];
-    this.keyups = [];
-    this.mouseMoveX = 0;
-    this.mouseMoveY = 0;
-    this.mouseDragX = 0;
-    this.mouseDragY = 0;
+    this.inputState.clearTemporaryStates();
 };
 
 InputManager.prototype.processBinding = function(binding) {
     var keys = this.keyMap[binding.event];
     var target = binding.target;
     var func = binding.func;
-    var self = this;
-
+    var inputState = this.inputState;
     //no key map exists
     if (keys == null) {
         return;
@@ -139,7 +128,7 @@ InputManager.prototype.processBinding = function(binding) {
         case 'keyup':
             {
                 if (_.some(keys, function(key) {
-                        return _.includes(self.keyups, key);
+                        return inputState.keyup(key);
                     })) {
                     target[func]();
                 }
@@ -149,7 +138,7 @@ InputManager.prototype.processBinding = function(binding) {
         case 'keydown':
             {
                 if (_.some(keys, function(key) {
-                        return _.includes(self.keydowns, key);
+                        return inputState.keydown(key);
                     })) {
                     target[func]();
                 }
@@ -159,7 +148,7 @@ InputManager.prototype.processBinding = function(binding) {
         case 'keyhold':
             {
                 if (_.some(keys, function(key) {
-                        return _.includes(self.keyholds, key);
+                        return inputState.keyhold(key);
                     })) {
                     target[func](1.0);
                 }

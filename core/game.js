@@ -1,15 +1,17 @@
 var $ = require('jquery');
 var Renderer = require('./systems/renderer');
 var InputManager = require('./systems/inputmanager');
-var register = require('./macros/getgame').register;
+var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
+var registerGame = require('./macros/getgame').register;
+var registerInput = require('./macros/getinput').register;
 
 //params
 //container: jquery container for game window, defaults to $('#container')
 //window: window object, used for resize events, defaults to window
 //renderer: provide a renderer, Game will create one by default
 //inputManager: provide a input manager, Game will create one by default
-//skipRegister: skip registering for game singleton, setting this true will stop macros will funcitoning, defaults to false
+//skipRegisterGame: skip registering for game singleton, setting this true will stop macros will funcitoning, defaults to false
 var Game = function(params) {
     params = params || {};
 
@@ -22,14 +24,18 @@ var Game = function(params) {
     this.renderer = params.renderer || new Renderer(container, params.window || window);
     this.systems.push(this.renderer);
 
+    this.inputState = new InputState();
+    registerInput(this.inputState);
+
     this.inputManager = params.inputManager || new InputManager({
-        keyMap: params.keyMap || {}
+        keyMap: params.keyMap || {},
+        inputState: this.inputState
     });
     this.systems.push(this.inputManager);
 
-    var skipRegister = params.skipRegister || false;
-    if (!skipRegister) {
-        register(this);
+    var skipRegisterGame = params.skipRegisterGame || false;
+    if (!skipRegisterGame) {
+        registerGame(this);
     }
 
     //focus container by default
@@ -41,9 +47,14 @@ Game.prototype = {
 
     tick: function(elapsedTime) {
         var self = this;
+        //tick each system
         this.systems.forEach(function(system) {
             system.tick(self.entityManager, elapsedTime);
         });
+
+        //tick entities and components
+        //this is so that components and entities gets ticked if implemented
+        this.entityManager.tick();
     },
 
     afterTick: function() {
@@ -51,6 +62,8 @@ Game.prototype = {
         this.systems.forEach(function(system) {
             system.afterTick();
         });
+
+        this.entityManager.afterTick();
     }
 };
 

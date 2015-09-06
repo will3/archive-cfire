@@ -2,7 +2,8 @@ var expect = require('chai').expect;
 var sinon = require('sinon');
 
 var EntityManager = require('../entitymanager');
-var Entity = require("../entity");
+var Entity = require('../entity');
+var Component = require('../component');
 
 describe('EntityManager', function() {
     var entityManager;
@@ -20,9 +21,9 @@ describe('EntityManager', function() {
 
     //creates a component with id
     var createComponent = function(id) {
-        return {
-            id: id
-        };
+        var component = new Component();
+        component.id = id;
+        return component;
     }
 
     //creates a mock entity with id
@@ -31,6 +32,12 @@ describe('EntityManager', function() {
         entity.id = id;
         return sinon.mock(entity);
     }
+
+    var createMockComponent = function(id) {
+        var component = new Component();
+        component.id = id;
+        return sinon.mock(component);
+    };
 
     describe('#addEntity', function() {
         it('should be able to retrieve later', function() {
@@ -135,12 +142,96 @@ describe('EntityManager', function() {
         });
     });
 
-    describe('entity life time', function() {
+    describe('#getEntities', function() {
+        it('should return child entities of entity', function() {
+            var entity = createEntity(1234);
+            var parentEntity = createEntity(2345);
+            entityManager.addEntity(parentEntity);
+            entityManager.addEntity(entity, parentEntity);
+            expect(entityManager.getEntities(2345)).to.contain(entity);
+        });
+
+        context('empty id passed', function() {
+            it('should return root entities', function() {
+                var entity = createEntity(1234);
+                var parentEntity = createEntity(2345);
+                entityManager.addEntity(parentEntity);
+                entityManager.addEntity(entity, parentEntity);
+
+                expect(entityManager.getEntities()).to.contain(parentEntity);
+                expect(entityManager.getEntities()).to.not.contain(entity);
+            });
+        });
+    });
+
+    context('entity life time', function() {
         it('should call afterInit after addEntity', function() {
             var mockEntity = createMockEntity(1234);
             mockEntity.expects('afterInit');
             entityManager.addEntity(mockEntity.object);
             mockEntity.verify();
+        });
+    });
+
+    describe('#tick', function() {
+        it('should tick components', function() {
+            var mockComponent = createMockComponent(2345);
+            var entity = createEntity(1234);
+
+            entityManager.addEntity(entity);
+            entityManager.addComponent(entity, mockComponent.object);
+
+            mockComponent.expects('tick');
+
+            entityManager.tick();
+
+            mockComponent.verify();
+        });
+
+        it('should tick child entities components', function() {
+            var mockComponent = createMockComponent(1234);
+            var entity = createEntity(2345);
+            var parentEntity = createEntity(3456);
+
+            entityManager.addEntity(parentEntity);
+            entityManager.addEntity(entity, parentEntity);
+            entityManager.addComponent(entity, mockComponent.object);
+
+            mockComponent.expects('tick');
+
+            entityManager.tick();
+
+            mockComponent.verify();
+        });
+
+        it('should after tick components', function() {
+            var mockComponent = createMockComponent(2345);
+            var entity = createEntity(1234);
+
+            entityManager.addEntity(entity);
+            entityManager.addComponent(entity, mockComponent.object);
+
+            mockComponent.expects('afterTick');
+
+            entityManager.afterTick();
+
+            mockComponent.verify();
+        });
+
+        it('should after tick child entities components', function() {
+            var mockComponent = createMockComponent(1234);
+            var entity = createEntity(2345);
+            var parentEntity = createEntity(3456);
+
+            entityManager.addEntity(parentEntity);
+            entityManager.addEntity(entity, parentEntity);
+            entityManager.addComponent(entity, mockComponent.object);
+
+            mockComponent.expects('afterTick');
+
+            entityManager.afterTick();
+
+            mockComponent.verify();
         });
     });
 });

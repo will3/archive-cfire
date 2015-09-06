@@ -1,6 +1,10 @@
 var _ = require('lodash');
 
 var EntityManager = function() {
+    this.root = {
+        entityIds: []
+    }
+
     //entity look up
     this.entities = {};
 
@@ -22,6 +26,9 @@ EntityManager.prototype = {
         if (parent != null) {
             this.entities[entity.id].parentId = parent.id;
             this.entities[parent.id].entities.push(entity.id);
+        } else {
+            //add to root
+            this.root.entityIds.push(entity.id);
         }
 
         entity.afterInit();
@@ -40,6 +47,9 @@ EntityManager.prototype = {
         if (map.parentId != null) {
             var parentMap = this.entities[map.parentId];
             _.pull(parentMap.entities, id);
+        } else {
+            //remove from root
+            _.pull(this.root, id);
         }
     },
 
@@ -63,15 +73,24 @@ EntityManager.prototype = {
         return this.entities[parentId].entity;
     },
 
-    getEntities: function(id) {
+    getEntityIds: function(id) {
         if (id == null) {
-            return _.map(this.entities, function(entityMap) {
-                return entityMap.entity;
+            return this.root.entityIds;
+        }
+
+        var map = this.entities[id];
+        return map.entities;
+    },
+
+    getEntities: function(id) {
+        var self = this;
+        if (id == null) {
+            return _.map(this.root.entityIds, function(rootEntityId) {
+                return self.getEntity(rootEntityId);
             });
         }
 
         var map = this.entities[id];
-        var self = this;
         return _.map(map.entities, function(childEntityId) {
             return self.getEntity(childEntityId);
         });
@@ -96,6 +115,41 @@ EntityManager.prototype = {
         var self = this;
         return _.map(map.components, function(componentId) {
             return self.getComponent(componentId);
+        });
+    },
+
+    tick: function() {
+        var self = this;
+        this.getEntityIds().forEach(function(rootEntityId) {
+            self.visitEntity(rootEntityId, function(entity) {
+                var components = self.getComponents(entity.id);
+                components.forEach(function(component) {
+                    component.tick();
+                });
+            });
+        });
+    },
+
+    afterTick: function() {
+        var self = this;
+        this.getEntityIds().forEach(function(rootEntityId) {
+            self.visitEntity(rootEntityId, function(entity) {
+                var components = self.getComponents(entity.id);
+                components.forEach(function(component) {
+                    component.afterTick();
+                });
+            });
+        });
+    },
+
+    //visit entity and all subEntities
+    //root elements gets visited first
+    visitEntity: function(id, callback) {
+        callback(this.getEntity(id));
+
+        var self = this;
+        this.getEntityIds(id).forEach(function(childEntityId) {
+            self.visitEntity(childEntityId, callback);
         });
     }
 };

@@ -2,13 +2,18 @@ var sinon = require('sinon');
 var expect = require('chai').expect;
 
 var InputManager = require('../../systems/inputmanager');
+var InputState = require('../../inputstate');
 
 describe('InputManager', function() {
-    var inputManager;
+    var inputManager, inputState;
 
     beforeEach(function() {
+        inputState = new InputState();
+
         inputManager = new InputManager({
-            bindKeyboardFunc: function() {}
+            bindKeyboardFunc: function() {},
+            bindMouseFunc: function() {},
+            inputState: inputState
         });
     });
 
@@ -17,7 +22,7 @@ describe('InputManager', function() {
             keyCode: 65
         });
 
-        expect(inputManager.keydowns).to.eql(['a']);
+        expect(inputState.keydowns).to.eql(['a']);
     });
 
     it('should record key up', function() {
@@ -25,7 +30,7 @@ describe('InputManager', function() {
             keyCode: 65
         });
 
-        expect(inputManager.keyups).to.eql(['a']);
+        expect(inputState.keyups).to.eql(['a']);
     });
 
     it('should record key hold', function() {
@@ -33,33 +38,33 @@ describe('InputManager', function() {
             keyCode: 65
         });
 
-        expect(inputManager.keyholds).to.eql(['a']);
+        expect(inputState.keyholds).to.eql(['a']);
     });
 
     it('should record key down once before key up', function() {
-        inputManager.keyholds = ['a'];
+        inputState.keyholds = ['a'];
         inputManager.handleKeydown({
             keyCode: 65
         });
 
-        expect(inputManager.keydowns).to.be.empty;
+        expect(inputState.keydowns).to.be.empty;
     });
 
     it('should record mouse down', function() {
         inputManager.handleMousedown();
-        expect(inputManager.mousedown).to.be.true;
+        expect(inputState.mousedown).to.be.true;
     });
 
     it('should record mouse up', function() {
-        inputManager.mousedown = true;
+        inputState.mousedown = true;
         inputManager.handleMouseup();
-        expect(inputManager.mousedown).to.be.false;
+        expect(inputState.mousedown).to.be.false;
     });
 
     it('should record mouse leave', function() {
-        inputManager.mousedown = true;
+        inputState.mousedown = true;
         inputManager.handleMouseleave();
-        expect(inputManager.mousedown).to.be.false;
+        expect(inputState.mousedown).to.be.false;
     });
 
     it('should record mouse move', function() {
@@ -73,12 +78,12 @@ describe('InputManager', function() {
             clientY: 100
         });
 
-        expect(inputManager.mouseMoveX).to.equal(50);
-        expect(inputManager.mouseMoveY).to.equal(50);
+        expect(inputState.mouseMoveX).to.equal(50);
+        expect(inputState.mouseMoveY).to.equal(50);
     });
 
     it('should record mouse drag when mouse is down', function() {
-        inputManager.mousedown = true;
+        inputState.mousedown = true;
 
         inputManager.handleMousemove({
             clientX: 50,
@@ -90,8 +95,8 @@ describe('InputManager', function() {
             clientY: 100
         });
 
-        expect(inputManager.mouseDragX).to.equal(50);
-        expect(inputManager.mouseDragY).to.equal(50);
+        expect(inputState.mouseDragX).to.equal(50);
+        expect(inputState.mouseDragY).to.equal(50);
     });
 
     it('should not record mouse drag when mouse is up', function() {
@@ -107,8 +112,8 @@ describe('InputManager', function() {
             clientY: 100
         });
 
-        expect(inputManager.mouseDragX).to.equal(0);
-        expect(inputManager.mouseDragY).to.equal(0);
+        expect(inputState.mouseDragX).to.equal(0);
+        expect(inputState.mouseDragY).to.equal(0);
     });
 
     describe('#processBinding', function() {
@@ -124,7 +129,7 @@ describe('InputManager', function() {
                 func: 'func'
             }
 
-            inputManager.keyups = ['w'];
+            inputState.keyups = ['w'];
             inputManager.keyMap = {
                 'up': ['w']
             };
@@ -148,7 +153,7 @@ describe('InputManager', function() {
                 func: 'func'
             }
 
-            inputManager.keydowns = ['w'];
+            inputState.keydowns = ['w'];
             inputManager.keyMap = {
                 'up': ['w']
             };
@@ -172,7 +177,7 @@ describe('InputManager', function() {
                 func: 'func'
             }
 
-            inputManager.keyholds = ['w'];
+            inputState.keyholds = ['w'];
             inputManager.keyMap = {
                 'up': ['w']
             };
