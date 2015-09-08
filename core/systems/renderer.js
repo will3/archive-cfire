@@ -25,10 +25,12 @@ var Renderer = function(container, window) {
 Renderer.prototype = Object.create(System.prototype);
 Renderer.prototype.constructor = Renderer;
 
-Renderer.prototype.tick = function(entitySystem) {
+Renderer.prototype.tick = function() {
     var self = this;
 
-    entitySystem.getEntities().forEach(function(entity) {
+    for (var id in this.entities) {
+        var entity = this.entities[id];
+
         var renderComponent = entity.getComponent(RenderComponent);
 
         //ignore entities with no render components
@@ -46,7 +48,7 @@ Renderer.prototype.tick = function(entitySystem) {
         renderComponent.object.position.copy(entity.transform.position);
         renderComponent.object.rotation.copy(entity.transform.rotation);
         renderComponent.object.scale.copy(entity.transform.scale);
-    });
+    }
 
     this.renderer.render(this.scene, this.camera);
 };

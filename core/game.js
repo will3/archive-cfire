@@ -45,6 +45,11 @@ var Game = function(params) {
 
     //focus container by default
     this.container.focus();
+
+    var self = this;
+    this.systems.forEach(function(system) {
+        system.setEntityManager(self.entityManager);
+    });
 };
 
 Game.prototype = {
@@ -62,14 +67,14 @@ Game.prototype = {
         var self = this;
         //tick each system
         this.systems.forEach(function(system) {
-            system.tick(self.entityManager, elapsedTime);
+            system.tick(elapsedTime);
         });
     },
 
     afterTick: function() {
         var self = this;
         this.systems.forEach(function(system) {
-            system.afterTick(self.entityManager);
+            system.afterTick();
         });
     },
 

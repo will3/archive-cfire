@@ -102,10 +102,12 @@ InputManager.prototype.handleMouseleave = function() {
     this.inputState.mousedown = false;
 };
 
-InputManager.prototype.tick = function(entitySystem) {
+InputManager.prototype.tick = function() {
     var self = this;
 
-    entitySystem.getEntities().forEach(function(entity) {
+    for (var id in this.entities) {
+        var entity = this.entities[id];
+
         var inputComponent = entity.getComponent(InputComponent);
 
         //skip entities without input components
@@ -116,7 +118,7 @@ InputManager.prototype.tick = function(entitySystem) {
         inputComponent.bindings.forEach(function(binding) {
             self.processBinding(binding);
         });
-    });
+    };
 };
 
 InputManager.prototype.afterTick = function() {

@@ -10,10 +10,31 @@ var EntityManager = function() {
 
     //components look up
     this.componentMap = {};
+
+    this.addEntityCallbacks = [];
+    this.removeEntityCallbacks = [];
+    this.addComponentCallbacks = [];
+    this.removeComponentCallbacks = [];
 };
 
 EntityManager.prototype = {
     constructor: EntityManager,
+
+    onAddEntity: function(callback) {
+        this.addEntityCallbacks.push(callback);
+    },
+
+    onRemoveEntity: function(callback) {
+        this.removeEntityCallbacks.push(callback);
+    },
+
+    onAddComponent: function(callback) {
+        this.addComponentCallbacks.push(callback);
+    },
+
+    onRemoveComponent: function(callback) {
+        this.removeComponentCallbacks.push(callback);
+    },
 
     addEntity: function(entity, parent) {
         this.entityMap[entity.id] = {
@@ -30,6 +51,10 @@ EntityManager.prototype = {
             //add to root
             this.root.entityIds.push(entity.id);
         }
+
+        this.addEntityCallbacks.forEach(function(callback) {
+            callback(entity.id);
+        });
     },
 
     removeEntity: function(id) {
@@ -49,6 +74,23 @@ EntityManager.prototype = {
             //remove from root
             _.pull(this.root, id);
         }
+
+        this.removeEntityCallbacks.forEach(function(callback) {
+            callback(id);
+        });
+    },
+
+    addComponent: function(entity, component) {
+        var map = this.entityMap[entity.id];
+        map.componentIds.push(component.id);
+        this.componentMap[component.id] = {
+            component: component,
+            entityId: entity.id
+        };
+
+        this.addComponentCallbacks.forEach(function(callback) {
+            callback(component.id);
+        });
     },
 
     removeComponent: function(id) {
@@ -59,6 +101,10 @@ EntityManager.prototype = {
             _.pull(entityMap.componentIds, id);
         }
         delete this.componentMap[id];
+
+        this.removeComponentCallbacks.forEach(function(callback) {
+            callback(id);
+        });
     },
 
     getEntity: function(id) {
@@ -92,15 +138,6 @@ EntityManager.prototype = {
         return _.map(map.entityIds, function(childEntityId) {
             return self.getEntity(childEntityId);
         });
-    },
-
-    addComponent: function(entity, component) {
-        var map = this.entityMap[entity.id];
-        map.componentIds.push(component.id);
-        this.componentMap[component.id] = {
-            component: component,
-            entityId: entity.id
-        };
     },
 
     getComponent: function(id) {
