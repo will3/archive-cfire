@@ -1,5 +1,6 @@
 var uuid = require('uuid-v4');
 var _ = require('lodash');
+
 var TransformComponent = require('./components/transformcomponent');
 var getGame = require('./macros/getgame');
 
@@ -15,17 +16,20 @@ Entity.prototype = {
     constructor: Entity,
 
     addComponent: function(component) {
-        var game = getGame();
-        if (game != null) {
-            game.entityManager.addComponent(this, component);
+        if (_.isFunction(component)) {
+            var type = component;
+            this.addComponent(new type());
+
+            return;
         }
+
+        var game = getGame();
+        getGame().entityManager.addComponent(this, component);
     },
 
     removeComponent: function(component) {
         var game = getGame();
-        if (game != null) {
-            game.entityManager.removeComponent(component.id);
-        }
+        game.entityManager.removeComponent(component.id);
     },
 
     getComponent: function(type) {

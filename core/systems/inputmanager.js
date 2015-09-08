@@ -78,6 +78,9 @@ InputManager.prototype.handleMouseup = function() {
 };
 
 InputManager.prototype.handleMousemove = function(e) {
+    this.inputState.mouseX = e.clientX;
+    this.inputState.mouseY = e.clientY;
+
     if (this.mouseLastX == null || this.mouseLastY == null) {
         this.mouseLastX = e.clientX;
         this.mouseLastY = e.clientY;

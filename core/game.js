@@ -22,9 +22,9 @@ var Game = function(params) {
 
     this.systems = [];
 
-    var container = params.container || $('#container');
+    this.container = params.container || $('#container');
 
-    this.renderer = params.renderer || new Renderer(container, params.window || window);
+    this.renderer = params.renderer || new Renderer(this.container, params.window || window);
     this.systems.push(this.renderer);
 
     this.inputState = new InputState();
@@ -44,7 +44,7 @@ var Game = function(params) {
     }
 
     //focus container by default
-    container.focus();
+    this.container.focus();
 };
 
 Game.prototype = {
@@ -73,7 +73,7 @@ Game.prototype = {
         });
     },
 
-    addEntity: function(entity){
+    addEntity: function(entity) {
         this.entityManager.addEntity(entity);
     }
 };

@@ -8,6 +8,8 @@ var InputState = function() {
 
     this.mousedown = false;
 
+    this.mouseX = 0;
+    this.mouseY = 0;
     this.mouseMoveX = 0;
     this.mouseMoveY = 0;
     this.mouseDragX = 0;
