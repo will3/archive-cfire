@@ -158,8 +158,9 @@ describe('EntityManager', function() {
                 entityManager.addEntity(parentEntity);
                 entityManager.addEntity(entity, parentEntity);
 
-                expect(entityManager.getEntities()).to.contain(parentEntity);
-                expect(entityManager.getEntities()).to.not.contain(entity);
+                var entities = entityManager.getEntities();
+                expect(entities).to.have.length(1);
+                expect(entities).to.contain(parentEntity);
             });
         });
     });

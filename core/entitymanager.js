@@ -125,6 +125,10 @@ EntityManager.prototype = {
         this.getEntityIds(id).forEach(function(childEntityId) {
             self.visitEntity(childEntityId, callback);
         });
+    },
+
+    getOwningEntity: function(id) {
+        return this.getEntity(this.componentMap[id].entityId);
     }
 };
 

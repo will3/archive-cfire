@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "nodemon ./site/bin/www",
-    "test": "mocha ./core/test --recursive",
+    "test": "mocha ./core/test --recursive --watch",
     "build": "browserify ./app/app.js -o ./site/public/javascripts/bundle.js",
     "watch": "watchify ./app/app.js -o ./site/public/javascripts/bundle.js"
   },

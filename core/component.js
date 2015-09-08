@@ -22,6 +22,18 @@ Component.prototype = {
         return this.afterTick != emptyFunc;
     },
 
+    getComponent: function(type) {
+        return getGame().entityManager.getOwningEntity(this.id).getComponent(type);
+    },
+
+    getOwningEntity: function() {
+        return getGame().entityManager.getOwningEntity(this.id);
+    },
+
+    get transform() {
+        return getGame().entityManager.getOwningEntity(this.id).transform;
+    },
+
     getGame: function() {
         return getGame();
     }

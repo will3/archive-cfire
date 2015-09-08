@@ -1,5 +1,5 @@
 //params
-//data	if not empty, populates map with data, defaults to null
+//data  if not empty, populates map with data, defaults to null
 var Chunk = function(params) {
     params = params || {};
 
@@ -34,14 +34,23 @@ Chunk.prototype = {
     },
 
     get: function(x, y, z) {
-        return this.map[x][y][z];
+        var xSlice = this.map[x];
+        if (xSlice == null) {
+            return null;
+        }
+        var ySlice = xSlice[y];
+        if (ySlice == null) {
+            return null;
+        }
+        return ySlice[z];
     },
 
     visit: function(callback) {
+        var self = this;
         for (var x in this.map) {
             for (var y in this.map[x]) {
                 for (var z in this.map[x][y]) {
-                    callback(x, y, z, this.map[x][y][z]);
+                    callback(parseInt(x), parseInt(y), parseInt(z), self.map[x][y][z]);
                 }
             }
         }

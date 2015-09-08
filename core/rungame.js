@@ -1,5 +1,3 @@
-require('./3rdparty/jquery.console');
-
 module.exports = function(game, params) {
     params = params || {};
     var frameRate = params.frameRate || 24.0;

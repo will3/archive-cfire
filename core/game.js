@@ -71,6 +71,10 @@ Game.prototype = {
         this.systems.forEach(function(system) {
             system.afterTick(self.entityManager);
         });
+    },
+
+    addEntity: function(entity){
+        this.entityManager.addEntity(entity);
     }
 };
 

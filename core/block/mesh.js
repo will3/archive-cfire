@@ -1,34 +1,78 @@
-var defaultMesher = function() {
-    addLeft: function(x, y, z, obj, geometry) {
+var THREE = require('three');
+var _ = require('lodash');
 
+var defaultMesher = {
+    getVertice: function(index) {
+        switch (index) {
+            case 0:
+                return new THREE.Vector3(-0.5, -0.5, -0.5); //0
+            case 1:
+                return new THREE.Vector3(+0.5, -0.5, -0.5); //1
+            case 2:
+                return new THREE.Vector3(+0.5, -0.5, +0.5); //2
+            case 3:
+                return new THREE.Vector3(-0.5, -0.5, +0.5); //3
+            case 4:
+                return new THREE.Vector3(-0.5, +0.5, -0.5); //4
+            case 5:
+                return new THREE.Vector3(+0.5, +0.5, -0.5); //5
+            case 6:
+                return new THREE.Vector3(+0.5, +0.5, +0.5); //6
+            case 7:
+                return new THREE.Vector3(-0.5, +0.5, +0.5); //7
+
+            default:
+                throw "invalid index";
+        }
     },
 
-    addRight: function(x, y, z, obj, geometry) {
+    //    7   6
+    //  4   5
+    //    3   2
+    //  0   1
+    addFace: function(face, coord, obj, geometry, scale) {
+        var indices;
+        switch (face) {
+            case 'left':
+                indices = [7, 4, 0, 3];
+                break;
+            case 'right':
+                indices = [5, 6, 2, 1];
+                break;
+            case 'bottom':
+                indices = [0, 1, 2, 3];
+                break;
+            case 'top':
+                indices = [5, 4, 7, 6];
+                break;
+            case 'back':
+                indices = [1, 0, 4, 5];
+                break;
+            case 'front':
+                indices = [6, 7, 3, 2];
+                break;
+            default:
+                throw "invalid face " + face;
+        }
 
-    },
+        var self = this;
+        var vertices = _.map(indices, function(indice) {
+            return self.getVertice(indice).add(coord).multiplyScalar(scale);
+        });
 
-    addBottom: function(x, y, z, obj, geometry) {
-
-    },
-
-    addTop: function(x, y, z, obj, geometry) {
-
-    },
-
-    addBack: function(x, y, z, obj, geometry) {
-
-    },
-
-    addFront: function(x, y, z, obj, geometry) {
-
+        var indexOffset = geometry.vertices.length;
+        geometry.vertices.push.apply(geometry.vertices, vertices);
+        geometry.faces.push(new THREE.Face3(indexOffset + 0, indexOffset + 1, indexOffset + 2));
+        geometry.faces.push(new THREE.Face3(indexOffset + 2, indexOffset + 3, indexOffset + 0));
     }
-}();
+};
 
-module.exports = function(chunk, meshers) {
-    meshers = meshers || {};
+module.exports = function(chunk, params) {
+    params = params || {};
+    var meshers = params.meshers || {};
+    var gridSize = params.gridSize || 10;
 
     var geometry = new THREE.Geometry();
-    var object = new THREE.Mesh(geometry);
 
     chunk.visit(function(x, y, z, obj) {
         var left = chunk.get(x - 1, y, z);
@@ -41,30 +85,38 @@ module.exports = function(chunk, meshers) {
         var type = obj.type;
         var mesher = meshers[type] || defaultMesher;
 
+        var coord = {
+            x: x,
+            y: y,
+            z: z
+        };
+
         if (!left) {
-            mesher.addLeft(x, y, z, obj, geometry);
+            mesher.addFace('left', coord, obj, geometry, gridSize);
         }
 
         if (!right) {
-            mesher.addRight(x, y, z, obj, geometry);
+            mesher.addFace('right', coord, obj, geometry, gridSize);
         }
 
         if (!bottom) {
-            mesher.addBottom(x, y, z, obj, geometry);
+            mesher.addFace('bottom', coord, obj, geometry, gridSize);
         }
 
         if (!top) {
-            mesher.addTop(x, y, z, obj, geometry);
+            mesher.addFace('top', coord, obj, geometry, gridSize);
         }
 
         if (!back) {
-            mesher.addBack(x, y, z, obj, geometry);
+            mesher.addFace('back', coord, obj, geometry, gridSize);
         }
 
         if (!front) {
-            mesher.addFront(x, y, z, obj, geometry);
+            mesher.addFace('front', coord, obj, geometry, gridSize);
         }
     });
 
-    return object;
+    geometry.mergeVertices();
+
+    return geometry;
 };
