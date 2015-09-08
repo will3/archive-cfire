@@ -9,11 +9,11 @@ HighlightSelection.prototype = Object.create(Component.prototype);
 HighlightSelection.prototype.constructor = HighlightSelection;
 
 HighlightSelection.prototype.tick = function() {
-
+	
 };
 
 HighlightSelection.prototype.afterTick = function() {
-
+	
 };
 
 module.exports = HighlightSelection;

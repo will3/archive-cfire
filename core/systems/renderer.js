@@ -20,6 +20,10 @@ var Renderer = function(container, window) {
     this.renderer.setClearColor(0xffffff, 1);
 
     container.append(this.renderer.domElement);
+
+    this.componentPredicate = function(component) {
+        return component instanceof RenderComponent;
+    }
 };
 
 Renderer.prototype = Object.create(System.prototype);
@@ -28,15 +32,8 @@ Renderer.prototype.constructor = Renderer;
 Renderer.prototype.tick = function() {
     var self = this;
 
-    for (var id in this.entities) {
-        var entity = this.entities[id];
-
-        var renderComponent = entity.getComponent(RenderComponent);
-
-        //ignore entities with no render components
-        if (renderComponent == null) {
-            return;
-        }
+    for (var id in this.components) {
+        var renderComponent = this.components[id];
 
         //add object to scene
         if (!renderComponent.addedToScene) {
@@ -45,9 +42,9 @@ Renderer.prototype.tick = function() {
         }
 
         //copy position, rotation and scale from entity
-        renderComponent.object.position.copy(entity.transform.position);
-        renderComponent.object.rotation.copy(entity.transform.rotation);
-        renderComponent.object.scale.copy(entity.transform.scale);
+        renderComponent.object.position.copy(renderComponent.transform.position);
+        renderComponent.object.rotation.copy(renderComponent.transform.rotation);
+        renderComponent.object.scale.copy(renderComponent.transform.scale);
     }
 
     this.renderer.render(this.scene, this.camera);

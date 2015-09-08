@@ -1,13 +1,11 @@
 var System = function(entityManager) {
     this.entityManager = null;
 
-    //set this to specify which entities this system is interested in
-    //if null system will loop through every entity
-    this.entityPredicate = function() {
+    this.componentPredicate = function() {
         return true;
     };
 
-    this.entities = {};
+    this.components = {};
 };
 
 System.prototype = {
@@ -20,8 +18,6 @@ System.prototype = {
         this.entityManager = entityManager;
 
         //subscribe entity events
-        this.entityManager.onAddEntity(this.handleAddEntity.bind(this));
-        this.entityManager.onRemoveEntity(this.handleRemoveEntity.bind(this));
         this.entityManager.onAddComponent(this.handleAddComponent.bind(this));
         this.entityManager.onRemoveComponent(this.handleRemoveComponent.bind(this));
     },
@@ -30,30 +26,19 @@ System.prototype = {
 
     afterTick: function() {},
 
-    handleAddEntity: function(id) {
-        var entity = this.entityManager.getEntity(id);
-        this.evaluateEntity(entity);
-    },
-
-    handleRemoveEntity: function(id) {
-        delete this.entities[entity.id];
-    },
-
     handleAddComponent: function(id) {
-        var entity = this.entityManager.getOwningEntity(id);
-        this.evaluateEntity(entity);
+        this.evaluateComponent(this.entityManager.getComponent(id));
     },
 
     handleRemoveComponent: function(id) {
-        var entity = this.entityManager.getOwningEntity(id);
-        this.evaluateEntity(entity);
+        this.evaluateComponent(this.entityManager.getComponent(id));
     },
 
-    evaluateEntity: function(entity) {
-        if (this.entityPredicate(entity)) {
-            this.entities[entity.id] = entity;
+    evaluateComponent: function(component) {
+        if (this.componentPredicate(component)) {
+            this.components[component.id] = component;
         } else {
-            delete this.entities[entity.id];
+            delete this.components[component.id];
         }
     }
 };

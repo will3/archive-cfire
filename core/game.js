@@ -4,6 +4,7 @@ var _ = require('lodash');
 var Renderer = require('./systems/renderer');
 var InputManager = require('./systems/inputmanager');
 var ScriptManager = require('./systems/scriptmanager');
+var Collision = require('./systems/collision');
 
 var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
@@ -23,6 +24,8 @@ var Game = function(params) {
     this.systems = [];
 
     this.container = params.container || $('#container');
+    //focus container by default
+    this.container.focus();
 
     this.renderer = params.renderer || new Renderer(this.container, params.window || window);
     this.systems.push(this.renderer);
@@ -38,13 +41,13 @@ var Game = function(params) {
     this.scriptManager = new ScriptManager();
     this.systems.push(this.scriptManager);
 
+    this.collision = new Collision();
+    this.systems.push(this.collision);
+
     var skipRegisterGame = params.skipRegisterGame || false;
     if (!skipRegisterGame) {
         registerGame(this);
     }
-
-    //focus container by default
-    this.container.focus();
 
     var self = this;
     this.systems.forEach(function(system) {

@@ -39,6 +39,7 @@ describe('ScriptManager', function() {
     beforeEach(function() {
         entityManager = new EntityManager();
         scriptManager = new ScriptManager();
+        scriptManager.setEntityManager(entityManager);
     });
 
     it('should tick components', function() {

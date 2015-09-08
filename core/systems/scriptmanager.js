@@ -4,30 +4,25 @@ var System = require('../system');
 var ScriptManager = function() {
     System.call(this);
 
+    this.componentPredicate = function(component) {
+        return component.tick != component.defaultFunc || component.afterTick != component.defaultFunc;
+    }
 };
 
 ScriptManager.prototype = Object.create(System.prototype);
 ScriptManager.prototype.constructor = ScriptManager;
 
 ScriptManager.prototype.tick = function() {
-    for (var id in this.entities) {
-        var entity = this.entities[id];
-        var components = this.entityManager.getComponents(entity.id);
-
-        components.forEach(function(component) {
-            component.tick();
-        });
+    for (var id in this.components) {
+        var component = this.components[id];
+        component.tick();
     };
 };
 
 ScriptManager.prototype.afterTick = function() {
-    for (var id in this.entities) {
-        var entity = this.entities[id];
-        var components = this.entityManager.getComponents(entity.id);
-
-        components.forEach(function(component) {
-            component.tick();
-        });
+    for (var id in this.components) {
+        var component = this.components[id];
+        component.afterTick();
     };
 };
 

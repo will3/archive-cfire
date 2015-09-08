@@ -1,26 +1,20 @@
 var uuid = require('uuid-v4');
 var getGame = require('../core/macros/getgame');
 
-var emptyFunc = function() {};
-
 var Component = function() {
     this.id = uuid();
 };
 
+var defaultFunc = function() {};
+
 Component.prototype = {
     constructor: Component,
 
-    tick: emptyFunc,
+    defaultFunc: defaultFunc,
 
-    afterTick: emptyFunc,
+    tick: defaultFunc,
 
-    getHasTick: function() {
-        return this.tick != emptyFunc;
-    },
-
-    getAfterTick: function() {
-        return this.afterTick != emptyFunc;
-    },
+    afterTick: defaultFunc,
 
     getComponent: function(type) {
         return getGame().entityManager.getOwningEntity(this.id).getComponent(type);

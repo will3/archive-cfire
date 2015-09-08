@@ -7,8 +7,12 @@ describe('Game', function() {
     var game, renderer, inputManager, container, window;
 
     beforeEach(function() {
-        renderer = {};
-        inputManager = {};
+        renderer = {
+            setEntityManager: function() {}
+        };
+        inputManager = {
+            setEntityManager: function() {}
+        };
         container = {
             focus: function() {}
         };

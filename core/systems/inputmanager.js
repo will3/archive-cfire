@@ -43,6 +43,10 @@ var InputManager = function(params) {
     };
 
     bindMouseFunc();
+
+    this.componentPredicate = function(component) {
+        return component instanceof InputComponent;
+    }
 };
 
 InputManager.prototype = Object.create(System.prototype);
@@ -105,15 +109,8 @@ InputManager.prototype.handleMouseleave = function() {
 InputManager.prototype.tick = function() {
     var self = this;
 
-    for (var id in this.entities) {
-        var entity = this.entities[id];
-
-        var inputComponent = entity.getComponent(InputComponent);
-
-        //skip entities without input components
-        if (inputComponent == null) {
-            return;
-        }
+    for (var id in this.components) {
+        var inputComponent = this.components[id];
 
         inputComponent.bindings.forEach(function(binding) {
             self.processBinding(binding);
