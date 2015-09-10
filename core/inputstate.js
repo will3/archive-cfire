@@ -6,7 +6,7 @@ var InputState = function() {
     this.keyholds = [];
     this.keyEvents = [];
 
-    this.mousedown = false;
+    this.mousehold = false;
 
     this.mouseX = 0;
     this.mouseY = 0;
@@ -46,6 +46,8 @@ InputState.prototype = {
         this.mouseMoveY = 0;
         this.mouseDragX = 0;
         this.mouseDragY = 0;
+        this.mousedown = false;
+        this.mouseup = false;
     }
 }
 

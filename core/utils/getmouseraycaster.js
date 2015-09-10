@@ -2,7 +2,7 @@ var THREE = require('three');
 var getGame = require('../macros/getgame');
 
 module.exports = function() {
-    var rayCaster = new THREE.RayCaster();
+    var raycaster = new THREE.Raycaster();
 
     var input = getGame().input;
     var container = getGame().container;
@@ -12,5 +12,7 @@ module.exports = function() {
     mouse.x = (input.mouseX / container.width()) * 2 - 1;
     mouse.y = -(input.mouseY / container.height()) * 2 + 1;
 
-    rayCaster.setFromCamera(mouse, camera);
+    raycaster.setFromCamera(mouse, camera);
+
+    return raycaster;
 }

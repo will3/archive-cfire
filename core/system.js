@@ -5,7 +5,7 @@ var System = function(entityManager) {
         return true;
     };
 
-    this.components = {};
+    this.componentMap = {};
 };
 
 System.prototype = {
@@ -36,9 +36,9 @@ System.prototype = {
 
     evaluateComponent: function(component) {
         if (this.componentPredicate(component)) {
-            this.components[component.id] = component;
+            this.componentMap[component.id] = component;
         } else {
-            delete this.components[component.id];
+            delete this.componentMap[component.id];
         }
     }
 };

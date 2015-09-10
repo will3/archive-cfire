@@ -83,6 +83,18 @@ Game.prototype = {
 
     addEntity: function(entity) {
         this.entityManager.addEntity(entity);
+    },
+
+    getMouseCollision: function() {
+        return this.collision.mouseCollision;
+    },
+
+    addObject3d: function(object) {
+        this.renderer.scene.add(object);
+    },
+
+    removeObject3d: function(object) {
+        this.renderer.scene.remove(object);
     }
 };
 

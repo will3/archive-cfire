@@ -3,6 +3,7 @@ var getGame = require('../core/macros/getgame');
 
 var Component = function() {
     this.id = uuid();
+    this.started = false;
 };
 
 var defaultFunc = function() {};
@@ -11,6 +12,8 @@ Component.prototype = {
     constructor: Component,
 
     defaultFunc: defaultFunc,
+
+    start: defaultFunc,
 
     tick: defaultFunc,
 
@@ -30,6 +33,25 @@ Component.prototype = {
 
     getGame: function() {
         return getGame();
+    },
+
+    getEntityByName: function(name) {
+        return getGame().entityManager.getEntityByName(name);
+    },
+
+    notify: function(func, param) {
+        var self = this;
+        this.getOwningEntity().getComponents().forEach(function(component) {
+            if (component == self) {
+                return;
+            }
+
+            if (component[func] == null) {
+                return;
+            }
+
+            component[func](param);
+        });
     }
 };
 

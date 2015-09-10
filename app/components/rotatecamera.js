@@ -4,8 +4,8 @@ var Component = require('../../core/component');
 var RotateCamera = function() {
     Component.call(this);
 
-    this.xSpeed = 0.001;
-    this.ySpeed = 0.001;
+    this.xSpeed = 0.004;
+    this.ySpeed = 0.004;
     this.distance = 1000;
 
     this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');

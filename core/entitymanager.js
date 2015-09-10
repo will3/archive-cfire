@@ -55,6 +55,8 @@ EntityManager.prototype = {
         this.addEntityCallbacks.forEach(function(callback) {
             callback(entity.id);
         });
+
+        return entity;
     },
 
     removeEntity: function(id) {
@@ -91,6 +93,8 @@ EntityManager.prototype = {
         this.addComponentCallbacks.forEach(function(callback) {
             callback(component.id);
         });
+
+        return component;
     },
 
     removeComponent: function(id) {
@@ -114,30 +118,7 @@ EntityManager.prototype = {
 
     getParentEntity: function(id) {
         var parentId = this.entityMap[id].parentId;
-        return this.entityMap[parentId].entity;
-    },
-
-    getEntityIds: function(id) {
-        if (id == null) {
-            return this.root.entityIds;
-        }
-
-        var map = this.entityMap[id];
-        return map.entityIds;
-    },
-
-    getEntities: function(id) {
-        var self = this;
-        if (id == null) {
-            return _.map(this.root.entityIds, function(rootEntityId) {
-                return self.getEntity(rootEntityId);
-            });
-        }
-
-        var map = this.entityMap[id];
-        return _.map(map.entityIds, function(childEntityId) {
-            return self.getEntity(childEntityId);
-        });
+        return parentId == null ? null : this.entityMap[parentId].entity;
     },
 
     getComponent: function(id) {
@@ -153,19 +134,16 @@ EntityManager.prototype = {
         });
     },
 
-    //visit entity and all subEntities
-    //root elements gets visited first
-    visitEntity: function(id, callback) {
-        callback(this.getEntity(id));
-
-        var self = this;
-        this.getEntityIds(id).forEach(function(childEntityId) {
-            self.visitEntity(childEntityId, callback);
-        });
-    },
-
     getOwningEntity: function(id) {
         return this.getEntity(this.componentMap[id].entityId);
+    },
+
+    getEntityByName: function(name) {
+        return _(this.entityMap).values().map(function(map) {
+            return map.entity;
+        }).find(function(entity) {
+            return entity.name == name;
+        });
     }
 };
 

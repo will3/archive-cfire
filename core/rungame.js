@@ -1,6 +1,6 @@
 module.exports = function(game, params) {
     params = params || {};
-    var frameRate = params.frameRate || 24.0;
+    var frameRate = params.frameRate || 60.0;
 
     var frameInterval = 1000.0 / frameRate;
 

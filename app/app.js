@@ -2,8 +2,10 @@ var runGame = require('../core/rungame');
 var Entity = require('../core/entity');
 var RenderComponent = require('../core/components/rendercomponent');
 var CollisionBody = require('../core/components/collisionbody');
-var MakeGrid = require('./components/makegrid');
+var Grid = require('./components/grid');
 var RotateCamera = require('./components/rotatecamera');
+var Highlight = require('./components/highlight');
+var ChunkController = require('./components/chunkcontroller');
 
 window.onload = function() {
 
@@ -16,16 +18,40 @@ window.onload = function() {
         }
     });
 
+    addGrid(game);
+    addChunk(game);
+    addInput(game);
+
+    runGame(game);
+};
+
+var addGrid = function(game) {
     var entity = new Entity();
+    entity.name = 'grid';
 
     game.addEntity(entity);
 
     entity.addComponent(RenderComponent);
-    entity.addComponent(MakeGrid);
-    entity.addComponent(RotateCamera);
+    entity.addComponent(Grid);
     entity.addComponent(CollisionBody);
+};
 
-    // entity.addComponent(CollisionBody);
+var addChunk = function(game) {
+    var entity = new Entity();
+    entity.name = 'chunk';
 
-    runGame(game);
+    game.addEntity(entity);
+
+    entity.addComponent(ChunkController);
+    entity.addComponent(RenderComponent);
+};
+
+var addInput = function(game) {
+    var entity = new Entity();
+    entity.name = 'input';
+
+    game.addEntity(entity);
+
+    entity.addComponent(RotateCamera);
+    entity.addComponent(Highlight);
 };

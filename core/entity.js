@@ -7,8 +7,9 @@ var getGame = require('./macros/getgame');
 var Entity = function() {
     this.id = uuid();
 
+    this.name = null;
+
     //every entity has a transform component to position within the world
-    //add to component after init
     this.transform = new TransformComponent();
 };
 
@@ -18,13 +19,13 @@ Entity.prototype = {
     addComponent: function(component) {
         if (_.isFunction(component)) {
             var type = component;
-            this.addComponent(new type());
+            return this.addComponent(new type());
 
             return;
         }
 
         var game = getGame();
-        getGame().entityManager.addComponent(this, component);
+        return getGame().entityManager.addComponent(this, component);
     },
 
     removeComponent: function(component) {
@@ -33,10 +34,17 @@ Entity.prototype = {
     },
 
     getComponent: function(type) {
-        var components = getGame().entityManager.getComponents(this.id);
-        return _.find(components, function(component) {
+        return _.find(this.getComponents(), function(component) {
             return component instanceof type;
         });
+    },
+
+    getComponents: function() {
+        return getGame().entityManager.getComponents(this.id);
+    },
+
+    getEntityByName: function(name) {
+        return getGame().entityManager.getEntityByName(name);
     }
 }
 

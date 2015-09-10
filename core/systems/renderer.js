@@ -32,8 +32,8 @@ Renderer.prototype.constructor = Renderer;
 Renderer.prototype.tick = function() {
     var self = this;
 
-    for (var id in this.components) {
-        var renderComponent = this.components[id];
+    for (var id in this.componentMap) {
+        var renderComponent = this.componentMap[id];
 
         //add object to scene
         if (!renderComponent.addedToScene) {

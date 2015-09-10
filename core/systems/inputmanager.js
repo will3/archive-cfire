@@ -75,10 +75,12 @@ InputManager.prototype.handleKeyup = function(e) {
 
 InputManager.prototype.handleMousedown = function() {
     this.inputState.mousedown = true;
+    this.inputState.mousehold = true;
 };
 
 InputManager.prototype.handleMouseup = function() {
-    this.inputState.mousedown = false;
+    this.inputState.mouseup = true;
+    this.inputState.mousehold = false;
 };
 
 InputManager.prototype.handleMousemove = function(e) {
@@ -93,7 +95,7 @@ InputManager.prototype.handleMousemove = function(e) {
     this.inputState.mouseMoveX += (e.clientX - this.mouseLastX);
     this.inputState.mouseMoveY += (e.clientY - this.mouseLastY);
 
-    if (this.inputState.mousedown) {
+    if (this.inputState.mousehold) {
         this.inputState.mouseDragX += (e.clientX - this.mouseLastX);
         this.inputState.mouseDragY += (e.clientY - this.mouseLastY);
     }
@@ -103,14 +105,14 @@ InputManager.prototype.handleMousemove = function(e) {
 };
 
 InputManager.prototype.handleMouseleave = function() {
-    this.inputState.mousedown = false;
+    this.inputState.mousehold = false;
 };
 
 InputManager.prototype.tick = function() {
     var self = this;
 
-    for (var id in this.components) {
-        var inputComponent = this.components[id];
+    for (var id in this.componentMap) {
+        var inputComponent = this.componentMap[id];
 
         inputComponent.bindings.forEach(function(binding) {
             self.processBinding(binding);
