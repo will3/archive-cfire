@@ -1,5 +1,6 @@
 var THREE = require('three');
 var assert = require('assert-plus');
+var _ = require('lodash');
 
 var Component = require('../../core/component');
 var Grid = require('./grid');
@@ -11,6 +12,7 @@ var Highlight = function() {
     this.cube = null;
 
     this.grid = null;
+
     this.chunkController = null;
 
     this.clickThreshold = 200;
@@ -54,16 +56,19 @@ Highlight.prototype.tick = function() {
 
     this.cube.visible = true;
 
-    var gridSize = this.grid.gridSize;
-
-    var x = Math.floor(intersect.point.x / gridSize);
-    var z = Math.floor(intersect.point.z / gridSize);
-
-    this.cube.position.x = x * gridSize + gridSize / 2.0;
-    this.cube.position.z = z * gridSize + gridSize / 2.0;
-    this.cube.position.y = this.grid.gridY * gridSize + gridSize / 2.0;
-
     var input = this.getGame().input;
+    var isRemove = input.keyhold('shift');
+    var coord = this.getCoord(intersect, entity, isRemove);
+
+    if (coord == null) {
+        return;
+    }
+
+    var gridSize = this.grid.gridSize;
+    this.cube.position.x = coord.x * gridSize;
+    this.cube.position.y = coord.y * gridSize;
+    this.cube.position.z = coord.z * gridSize;
+
     if (input.mousedown) {
         this.lastMousedownTime = new Date().getTime();
     }
@@ -72,17 +77,73 @@ Highlight.prototype.tick = function() {
         var diff = new Date().getTime() - this.lastMousedownTime;
 
         if (diff < this.clickThreshold) {
-
-            var coord = {
-                x: x,
-                y: this.grid.gridY,
-                z: z
+            if (isRemove) {
+                this.chunkController.removeBlock(coord);
+            } else {
+                this.chunkController.addBlock(coord);
             }
-
-            this.chunkController.addBlock(coord);
-
         }
     }
+
+    if (input.keydown('w')) {
+        this.grid.gridY += 1;
+        this.grid.updateObjects();
+    }
+
+    if (input.keydown('s')) {
+        this.grid.gridY -= 1;
+        this.grid.updateObjects();
+    }
+};
+
+Highlight.prototype.getCoord = function(intersect, entity, isRemove) {
+    var gridSize = this.grid.gridSize;
+    var halfGridSize = gridSize / 2.0;
+
+    if (entity == this.grid.getOwningEntity()) {
+        return {
+            x: Math.floor((intersect.point.x + halfGridSize) / gridSize),
+            y: this.grid.gridY,
+            z: Math.floor((intersect.point.z + halfGridSize) / gridSize)
+        };
+    } else if (entity == this.chunkController.getOwningEntity()) {
+        var faceIndex = intersect.faceIndex;
+        var faceData = this.chunkController.faceMap[faceIndex];
+
+        var coord = _.cloneDeep(faceData.coord);
+
+        if (isRemove) {
+            return coord;
+        }
+
+        var side = faceData.side;
+
+        switch (side) {
+            case 'left':
+                coord.x--;
+                return coord;
+            case 'right':
+                coord.x++;
+                return coord;
+            case 'bottom':
+                coord.y--;
+                return coord;
+            case 'top':
+                coord.y++;
+                return coord;
+            case 'back':
+                coord.z--;
+                return coord;
+            case 'front':
+                coord.z++;
+                return coord;
+            default:
+                return null;
+        }
+
+    }
+
+    return null;
 };
 
 module.exports = Highlight;

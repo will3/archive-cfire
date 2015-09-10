@@ -9,7 +9,6 @@ try {
 var InputComponent = require('../components/inputcomponent');
 var System = require('../system');
 var InputState = require('../inputstate');
-var keycode = require('keycode');
 
 //params
 //keyMap        key map to load, defaults to {}
@@ -28,12 +27,6 @@ var InputManager = function(params) {
     this.inputState = params.inputState || new InputState();
 
     var self = this;
-    var bindKeyboardFunc = params.bindKeyboardFunc || function() {
-        $(window).keydown(self.handleKeydown.bind(self));
-        $(window).keyup(self.handleKeyup.bind(self));
-    };
-
-    bindKeyboardFunc();
 
     var bindMouseFunc = params.bindMouseFunc || function() {
         $(window).mousemove(self.handleMousemove.bind(self));
@@ -47,30 +40,36 @@ var InputManager = function(params) {
     this.componentPredicate = function(component) {
         return component instanceof InputComponent;
     }
+
+    this.bindKeyMap();
 };
 
 InputManager.prototype = Object.create(System.prototype);
 InputManager.prototype.constructor = InputManager;
 
-InputManager.prototype.handleKeydown = function(e) {
-    this.inputState.keyEvents.push(e);
-    var key = keycode(e).toLowerCase();
+InputManager.prototype.bindKeyMap = function() {
+    MouseTrap.reset();
+    var self = this;
 
-    if (!this.inputState.keyhold(key)) {
-        this.inputState.keydowns.push(key);
-        this.inputState.keyholds.push(key);
+    for (var event in this.keyMap) {
+        var keys = this.keyMap[event];
+        keys.forEach(function(key) {
+            MouseTrap.bind(key, function() {
+                if (!self.inputState.keyhold(key)) {
+                    self.inputState.keydowns.push(key);
+                    self.inputState.keyholds.push(key);
+                }
+            });
+
+            MouseTrap.bind(key, function() {
+                if (!self.inputState.keyup(key)) {
+                    self.inputState.keyups.push(key);
+                }
+
+                _.pull(self.inputState.keyholds, key);
+            }, 'keyup');
+        });
     }
-};
-
-InputManager.prototype.handleKeyup = function(e) {
-    this.inputState.keyEvents.push(e);
-    var key = keycode(e).toLowerCase();
-
-    if (!this.inputState.keyup(key)) {
-        this.inputState.keyups.push(key);
-    }
-
-    _.pull(this.inputState.keyholds, key);
 };
 
 InputManager.prototype.handleMousedown = function() {

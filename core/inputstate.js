@@ -4,7 +4,6 @@ var InputState = function() {
     this.keydowns = [];
     this.keyups = [];
     this.keyholds = [];
-    this.keyEvents = [];
 
     this.mousehold = false;
 
@@ -41,7 +40,6 @@ InputState.prototype = {
     clearTemporaryStates: function() {
         this.keydowns = [];
         this.keyups = [];
-        this.keyEvents = [];
         this.mouseMoveX = 0;
         this.mouseMoveY = 0;
         this.mouseDragX = 0;

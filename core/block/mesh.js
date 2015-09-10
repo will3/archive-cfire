@@ -30,9 +30,16 @@ var defaultMesher = {
     //  4   5
     //    3   2
     //  0   1
-    addFace: function(face, coord, obj, geometry, scale) {
+    addFace: function(side, params) {
+        params = params || {};
+
+        var coord = params.coord || new THREE.Vector3();
+        var scale = params.gridSize || new THREE.Vector3(1, 1, 1);
+        var geometry = params.geometry;
+        var faceMap = params.faceMap;
+
         var indices;
-        switch (face) {
+        switch (side) {
             case 'left':
                 indices = [7, 4, 0, 3];
                 break;
@@ -52,7 +59,7 @@ var defaultMesher = {
                 indices = [6, 7, 3, 2];
                 break;
             default:
-                throw "invalid face " + face;
+                return;
         }
 
         var self = this;
@@ -62,11 +69,29 @@ var defaultMesher = {
 
         var indexOffset = geometry.vertices.length;
         geometry.vertices.push.apply(geometry.vertices, vertices);
-        geometry.faces.push(new THREE.Face3(indexOffset + 0, indexOffset + 1, indexOffset + 2));
-        geometry.faces.push(new THREE.Face3(indexOffset + 2, indexOffset + 3, indexOffset + 0));
+
+        var faces = [
+            new THREE.Face3(indexOffset + 0, indexOffset + 1, indexOffset + 2),
+            new THREE.Face3(indexOffset + 2, indexOffset + 3, indexOffset + 0)
+        ];
+
+        faces.forEach(function(face) {
+            geometry.faces.push(face);
+            if (faceMap != null) {
+                faceMap[geometry.faces.length - 1] = {
+                    coord: coord,
+                    side: side,
+                    face: face
+                }
+            }
+        });
     }
 };
 
+//params
+//meshers   dictionary of meshers, if empty a default mesher will be used
+//gridSize  grid size to use
+//faceMap   if not empty, populate this instance with face mapping info
 module.exports = function(chunk, params) {
     params = params || {};
     var meshers = params.meshers || {};
@@ -82,8 +107,7 @@ module.exports = function(chunk, params) {
         var back = chunk.get(x, y, z - 1);
         var front = chunk.get(x, y, z + 1);
 
-        var type = obj.type;
-        var mesher = meshers[type] || defaultMesher;
+        var mesher = defaultMesher;
 
         var coord = {
             x: x,
@@ -91,32 +115,40 @@ module.exports = function(chunk, params) {
             z: z
         };
 
+        var mesherParams = {
+            coord: coord,
+            geometry: geometry,
+            gridSize: gridSize,
+            faceMap: params.faceMap,
+        };
+
         if (!left) {
-            mesher.addFace('left', coord, obj, geometry, gridSize);
+            mesher.addFace('left', mesherParams);
         }
 
         if (!right) {
-            mesher.addFace('right', coord, obj, geometry, gridSize);
+            mesher.addFace('right', mesherParams);
         }
 
         if (!bottom) {
-            mesher.addFace('bottom', coord, obj, geometry, gridSize);
+            mesher.addFace('bottom', mesherParams);
         }
 
         if (!top) {
-            mesher.addFace('top', coord, obj, geometry, gridSize);
+            mesher.addFace('top', mesherParams);
         }
 
         if (!back) {
-            mesher.addFace('back', coord, obj, geometry, gridSize);
+            mesher.addFace('back', mesherParams);
         }
 
         if (!front) {
-            mesher.addFace('front', coord, obj, geometry, gridSize);
+            mesher.addFace('front', mesherParams);
         }
     });
 
     geometry.mergeVertices();
+    geometry.computeFaceNormals();
 
     return geometry;
 };

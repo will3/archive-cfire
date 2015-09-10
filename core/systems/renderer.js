@@ -24,21 +24,39 @@ var Renderer = function(container, window) {
     this.componentPredicate = function(component) {
         return component instanceof RenderComponent;
     }
+
+    //object look up, by component id
+    this.objectMap = {};
 };
 
 Renderer.prototype = Object.create(System.prototype);
 Renderer.prototype.constructor = Renderer;
 
-Renderer.prototype.tick = function() {
-    var self = this;
+Renderer.prototype.addObject = function(renderComponent) {
+    this.scene.add(renderComponent.object);
+    this.objectMap[renderComponent.id] = renderComponent.object;
+};
 
+Renderer.prototype.tick = function() {
     for (var id in this.componentMap) {
         var renderComponent = this.componentMap[id];
 
-        //add object to scene
-        if (!renderComponent.addedToScene) {
-            self.scene.add(renderComponent.object);
-            renderComponent.addedToScene = true;
+        //add to map
+        if (this.objectMap[renderComponent.id] == null) {
+            if (renderComponent.object != null) {
+                this.addObject(renderComponent);
+            }
+        } else if (this.objectMap[id] != renderComponent.object) {
+            this.scene.remove(this.objectMap[renderComponent.id]);
+            delete this.objectMap[renderComponent.id];
+
+            if (renderComponent.object != null) {
+                this.addObject(renderComponent);
+            }
+        }
+
+        if (renderComponent.object == null) {
+            continue;
         }
 
         //copy position, rotation and scale from entity

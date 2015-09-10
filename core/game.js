@@ -5,6 +5,7 @@ var Renderer = require('./systems/renderer');
 var InputManager = require('./systems/inputmanager');
 var ScriptManager = require('./systems/scriptmanager');
 var Collision = require('./systems/collision');
+var Lighting = require('./systems/lighting');
 
 var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
@@ -43,6 +44,9 @@ var Game = function(params) {
 
     this.collision = new Collision();
     this.systems.push(this.collision);
+
+    this.lighting = new Lighting(this.renderer);
+    this.systems.push(this.lighting);
 
     var skipRegisterGame = params.skipRegisterGame || false;
     if (!skipRegisterGame) {

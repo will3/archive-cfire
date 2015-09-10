@@ -10,7 +10,6 @@ var CollisionBody = require('../../core/components/collisionbody');
 var Grid = function() {
     Component.call(this);
 
-    this.madeGrid = false;
     this.gridNum = 10;
     this.gridSize = 50;
     this.gridY = 0;
@@ -28,37 +27,33 @@ Grid.prototype.start = function() {
 
     assert.object(this.renderComponent, 'renderComponent');
     assert.object(this.collisionBody, 'collisionBody');
+
+    this.updateObjects();
 };
 
-Grid.prototype.tick = function() {
-    if (this.madeGrid) {
-        return;
-    }
-
+Grid.prototype.updateObjects = function() {
     this.makeLines();
     this.makeCollisionBody();
-
-    this.madeGrid = true;
 };
 
 Grid.prototype.makeLines = function() {
-    this.renderComponent = this.getComponent(RenderComponent);
-
     var material = new THREE.LineBasicMaterial({
         color: 0xAAAAAA
     });
 
     var geometries = [];
-    var size = this.gridSize * this.gridNum * 2;
+    var size = this.gridSize * (this.gridNum * 2 + 1);
+    var y = this.getY();
+
     for (var z = -size / 2.0; z <= size / 2.0; z += this.gridSize) {
         var geometry = new THREE.Geometry();
-        geometry.vertices.push(new THREE.Vector3(-size / 2.0, 0, z), new THREE.Vector3(size / 2.0, 0, z));
+        geometry.vertices.push(new THREE.Vector3(-size / 2.0, y, z), new THREE.Vector3(size / 2.0, y, z));
         geometries.push(geometry);
     }
 
     for (var x = -size / 2.0; x <= size / 2.0; x += this.gridSize) {
         var geometry = new THREE.Geometry();
-        geometry.vertices.push(new THREE.Vector3(x, 0, -size / 2.0), new THREE.Vector3(x, 0, size / 2.0));
+        geometry.vertices.push(new THREE.Vector3(x, y, -size / 2.0), new THREE.Vector3(x, y, size / 2.0));
         geometries.push(geometry);
     }
 
@@ -67,21 +62,24 @@ Grid.prototype.makeLines = function() {
     });
 
     var self = this;
+
+    var object = new THREE.Object3D();
     lines.forEach(function(line) {
-        self.renderComponent.object.add(line);
+        object.add(line);
     });
+
+    this.renderComponent.object = object;
 };
 
 Grid.prototype.makeCollisionBody = function() {
-    this.collisionBody = this.getComponent(CollisionBody);
-
     var size = this.gridSize * this.gridNum * 2;
+    var y = this.getY();
     //  d  c
     //a  b
-    var a = new THREE.Vector3(-size / 2.0, 0, -size / 2.0);
-    var b = new THREE.Vector3(size / 2.0, 0, -size / 2.0);
-    var c = new THREE.Vector3(size / 2.0, 0, size / 2.0);
-    var d = new THREE.Vector3(-size / 2.0, 0, size / 2.0);
+    var a = new THREE.Vector3(-size / 2.0, y, -size / 2.0);
+    var b = new THREE.Vector3(size / 2.0, y, -size / 2.0);
+    var c = new THREE.Vector3(size / 2.0, y, size / 2.0);
+    var d = new THREE.Vector3(-size / 2.0, y, size / 2.0);
 
     var geometry = new THREE.Geometry();
     geometry.vertices.push(a, b, c, d);
@@ -93,4 +91,7 @@ Grid.prototype.makeCollisionBody = function() {
     this.collisionBody.object = new THREE.Mesh(geometry, material);
 };
 
+Grid.prototype.getY = function() {
+    return this.gridY * this.gridSize - this.gridSize / 2.0;
+};
 module.exports = Grid;

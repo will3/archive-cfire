@@ -3,6 +3,7 @@ var THREE = require('three');
 
 var Component = require('../../core/component');
 var RenderComponent = require('../../core/components/rendercomponent');
+var CollisionBody = require('../../core/components/collisionbody');
 var mesh = require('../../core/block/mesh');
 var Chunk = require('../../core/block/chunk');
 
@@ -14,6 +15,8 @@ var ChunkController = function() {
     this.gridSize = 50;
 
     this.chunk = new Chunk();
+
+    this.faceMap = {};
 }
 
 ChunkController.prototype = Object.create(Component.prototype);
@@ -21,20 +24,40 @@ ChunkController.prototype.constructor = ChunkController;
 
 ChunkController.prototype.start = function() {
     this.renderComponent = this.getComponent(RenderComponent);
+    this.collisionBody = this.getComponent(CollisionBody);
     assert.object(this.renderComponent, 'renderComponent');
+    assert.object(this.collisionBody, 'collisionBody');
 };
 
 ChunkController.prototype.addBlock = function(coord) {
     this.chunk.add(coord.x, coord.y, coord.z, '0');
+    this.updateObjects();
+};
 
-    var geometry = mesh(this.chunk);
+ChunkController.prototype.removeBlock = function(coord) {
+    this.chunk.remove(coord.x, coord.y, coord.z);
+    this.updateObjects();
+}
 
-    var object = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-        color: '0xff0000'
-    }));
+ChunkController.prototype.updateObjects = function() {
+    var geometry = mesh(this.chunk, {
+        gridSize: this.gridSize,
+        faceMap: this.faceMap
+    });
 
-    this.renderComponent.object = object;
-    this.renderComponent.needsRedraw = true;
+    var material = new THREE.MeshLambertMaterial({
+        color: 0xAAAAAA
+    });
+
+    var object = new THREE.Mesh(geometry, material);
+    var edges = new THREE.EdgesHelper(object, 0xAAAAAA);
+
+    var renderObject = new THREE.Object3D();
+    renderObject.add(object);
+    renderObject.add(edges);
+
+    this.renderComponent.object = renderObject;
+    this.collisionBody.object = object;
 };
 
 module.exports = ChunkController;
