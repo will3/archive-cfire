@@ -7,7 +7,7 @@ var RenderComponent = require('../../core/components/rendercomponent');
 var CollisionBody = require('../../core/components/collisionbody');
 
 //makes grid render and collision objects
-var Grid = function() {
+var GridController = function() {
     Component.call(this);
 
     this.gridNum = 10;
@@ -18,10 +18,10 @@ var Grid = function() {
     this.collisionBody = null;
 };
 
-Grid.prototype = Object.create(Component.prototype);
-Grid.prototype.constructor = Grid;
+GridController.prototype = Object.create(Component.prototype);
+GridController.prototype.constructor = GridController;
 
-Grid.prototype.start = function() {
+GridController.prototype.start = function() {
     this.renderComponent = this.getComponent(RenderComponent);
     this.collisionBody = this.getComponent(CollisionBody);
 
@@ -31,12 +31,12 @@ Grid.prototype.start = function() {
     this.updateObjects();
 };
 
-Grid.prototype.updateObjects = function() {
+GridController.prototype.updateObjects = function() {
     this.makeLines();
     this.makeCollisionBody();
 };
 
-Grid.prototype.makeLines = function() {
+GridController.prototype.makeLines = function() {
     var material = new THREE.LineBasicMaterial({
         color: 0xAAAAAA
     });
@@ -71,7 +71,7 @@ Grid.prototype.makeLines = function() {
     this.renderComponent.object = object;
 };
 
-Grid.prototype.makeCollisionBody = function() {
+GridController.prototype.makeCollisionBody = function() {
     var size = this.gridSize * this.gridNum * 2;
     var y = this.getY();
     //  d  c
@@ -91,7 +91,7 @@ Grid.prototype.makeCollisionBody = function() {
     this.collisionBody.object = new THREE.Mesh(geometry, material);
 };
 
-Grid.prototype.getY = function() {
+GridController.prototype.getY = function() {
     return this.gridY * this.gridSize - this.gridSize / 2.0;
 };
-module.exports = Grid;
+module.exports = GridController;

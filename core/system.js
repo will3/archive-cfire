@@ -1,3 +1,5 @@
+var getGame = require('./macros/getgame');
+
 var System = function(entityManager) {
     this.entityManager = null;
 
@@ -6,6 +8,10 @@ var System = function(entityManager) {
     };
 
     this.componentMap = {};
+
+    this.started = false;
+
+    this.tickRate = 24.0;
 };
 
 System.prototype = {
@@ -21,6 +27,8 @@ System.prototype = {
         this.entityManager.onAddComponent(this.handleAddComponent.bind(this));
         this.entityManager.onRemoveComponent(this.handleRemoveComponent.bind(this));
     },
+
+    start: function() {},
 
     tick: function() {},
 
@@ -40,6 +48,10 @@ System.prototype = {
         } else {
             delete this.componentMap[component.id];
         }
+    },
+
+    getGame: function() {
+        return getGame();
     }
 };
 

@@ -11,7 +11,6 @@ var System = require('../system');
 var InputState = require('../inputstate');
 
 //params
-//keyMap        key map to load, defaults to {}
 //inputState    inputState to manage, this instance is assigned to this.inputState, by default create default instance
 var InputManager = function(params) {
     System.call(this);
@@ -23,7 +22,6 @@ var InputManager = function(params) {
 
     params = params || {};
 
-    this.keyMap = params.keyMap || {};
     this.inputState = params.inputState || new InputState();
 
     var self = this;
@@ -41,7 +39,7 @@ var InputManager = function(params) {
         return component instanceof InputComponent;
     }
 
-    this.bindKeyMap();
+    this.keyMap = null;
 };
 
 InputManager.prototype = Object.create(System.prototype);
@@ -55,8 +53,11 @@ InputManager.prototype.bindKeyMap = function() {
         var keys = this.keyMap[event];
         keys.forEach(function(key) {
             MouseTrap.bind(key, function() {
-                if (!self.inputState.keyhold(key)) {
+                if (!self.inputState.keydown(key)) {
                     self.inputState.keydowns.push(key);
+                }
+
+                if (!self.inputState.keyhold(key)) {
                     self.inputState.keyholds.push(key);
                 }
             });
@@ -72,7 +73,7 @@ InputManager.prototype.bindKeyMap = function() {
     }
 };
 
-InputManager.prototype.handleMousedown = function() {
+InputManager.prototype.handleMousedown = function(e) {
     this.inputState.mousedown = true;
     this.inputState.mousehold = true;
 };
@@ -107,6 +108,11 @@ InputManager.prototype.handleMouseleave = function() {
     this.inputState.mousehold = false;
 };
 
+InputManager.prototype.start = function() {
+    this.keyMap = this.getGame().keyMap;
+    this.bindKeyMap();
+};
+
 InputManager.prototype.tick = function() {
     var self = this;
 
@@ -115,6 +121,29 @@ InputManager.prototype.tick = function() {
 
         inputComponent.bindings.forEach(function(binding) {
             self.processBinding(binding);
+        });
+
+        inputComponent.mousedownFunc.forEach(function(func) {
+            if (self.inputState.mousedown) {
+                func();
+            }
+        });
+
+        inputComponent.mouseupFunc.forEach(function(func) {
+            if (self.inputState.mouseup) {
+                func();
+            }
+        });
+
+        inputComponent.mousemoveFunc.forEach(function(func) {
+            if (self.inputState.mouseMoveX != 0 || self.inputState.mouseMoveY != 0) {
+                func({
+                    x: self.inputState.mouseMoveX,
+                    y: self.inputState.mouseMoveY,
+                    dragX: self.inputState.mouseDragX,
+                    dragY: self.inputState.mouseDragY
+                });
+            }
         });
     };
 };
@@ -140,7 +169,7 @@ InputManager.prototype.processBinding = function(binding) {
                 if (_.some(keys, function(key) {
                         return inputState.keyup(key);
                     })) {
-                    target[func]();
+                    func();
                 }
             }
             break;
@@ -150,7 +179,7 @@ InputManager.prototype.processBinding = function(binding) {
                 if (_.some(keys, function(key) {
                         return inputState.keydown(key);
                     })) {
-                    target[func]();
+                    func();
                 }
             }
             break;
@@ -160,7 +189,7 @@ InputManager.prototype.processBinding = function(binding) {
                 if (_.some(keys, function(key) {
                         return inputState.keyhold(key);
                     })) {
-                    target[func](1.0);
+                    func();
                 }
             }
             break;

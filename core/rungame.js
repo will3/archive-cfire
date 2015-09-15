@@ -1,8 +1,8 @@
 module.exports = function(game, params) {
     params = params || {};
-    var frameRate = params.frameRate || 60.0;
+    var tickRate = params.tickRate || 60.0;
 
-    var frameInterval = 1000.0 / frameRate;
+    var frameInterval = 1000.0 / tickRate;
 
     var interval = function() {
         game.tick(frameInterval);

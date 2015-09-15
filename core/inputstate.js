@@ -23,7 +23,6 @@ InputState.prototype = {
         return _.includes(this.keyholds, key);
     },
 
-
     //return if the char key is just released
     //this value will be cleared after each tick
     keyup: function(key) {

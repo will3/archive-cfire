@@ -1,79 +1,81 @@
-var $ = require('jquery');
 var _ = require('lodash');
-
-var Renderer = require('./systems/renderer');
-var InputManager = require('./systems/inputmanager');
-var ScriptManager = require('./systems/scriptmanager');
-var Collision = require('./systems/collision');
-var Lighting = require('./systems/lighting');
+var $ = require('jquery');
 
 var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
 var registerGame = require('./macros/getgame').register;
 
+var Renderer = require('./systems/renderer');
+var InputManager = require('./systems/inputmanager');
+var Collision = require('./systems/collision');
+var Console = require('./systems/console');
+
 //params
-//container: jquery container for game window, defaults to $('#container')
-//window: window object, used for resize events, defaults to window
-//renderer: provide a renderer, Game will create one by default
-//inputManager: provide a input manager, Game will create one by default
 //skipRegisterGame: skip registering for game singleton, setting this true will stop macros will funcitoning, defaults to false
+//systems: systems this game should run, creates default set if left empty
+//keyMap: key map
 var Game = function(params) {
     params = params || {};
+
+    this.keyMap = params.keyMap;
 
     this.entityManager = new EntityManager();
 
     this.systems = [];
 
     this.container = params.container || $('#container');
-    //focus container by default
-    this.container.focus();
-
-    this.renderer = params.renderer || new Renderer(this.container, params.window || window);
-    this.systems.push(this.renderer);
-
-    this.inputState = new InputState();
-
-    this.inputManager = params.inputManager || new InputManager({
-        keyMap: params.keyMap || {},
-        inputState: this.inputState
-    });
-    this.systems.push(this.inputManager);
-
-    this.scriptManager = new ScriptManager();
-    this.systems.push(this.scriptManager);
-
-    this.collision = new Collision();
-    this.systems.push(this.collision);
-
-    this.lighting = new Lighting(this.renderer);
-    this.systems.push(this.lighting);
 
     var skipRegisterGame = params.skipRegisterGame || false;
     if (!skipRegisterGame) {
         registerGame(this);
     }
 
+    this.systems = params.systems || require('./systems');
     var self = this;
     this.systems.forEach(function(system) {
         system.setEntityManager(self.entityManager);
     });
+
+    this.renderer = this.getSystem(Renderer);
+    this.inputManager = this.getSystem(InputManager);
+    this.collision = this.getSystem(Collision);
+    this.console = this.getSystem(Console);
+
+    //disable right click
+    document.oncontextmenu = document.body.oncontextmenu = function() {
+        return false;
+    }
 };
 
 Game.prototype = {
     constructor: Game,
 
     get input() {
-        return this.inputState;
+        return this.inputManager.inputState;
     },
 
     get camera() {
         return this.renderer.camera;
     },
 
+    getMouseCollisions: function() {
+        return this.collision.mouseCollisions;
+    },
+
+    getSystem: function(type) {
+        return _.find(this.systems, function(system) {
+            return system instanceof type;
+        });
+    },
+
     tick: function(elapsedTime) {
         var self = this;
         //tick each system
         this.systems.forEach(function(system) {
+            if (!system.started) {
+                system.start();
+                system.started = true;
+            }
             system.tick(elapsedTime);
         });
     },
@@ -87,10 +89,6 @@ Game.prototype = {
 
     addEntity: function(entity) {
         this.entityManager.addEntity(entity);
-    },
-
-    getMouseCollision: function() {
-        return this.collision.mouseCollision;
     },
 
     addObject3d: function(object) {

@@ -11,7 +11,7 @@ var Collision = function() {
         return component instanceof CollisionBody;
     }
 
-    this.mouseCollision = null;
+    this.mouseCollisions = null;
 };
 
 Collision.prototype = Object.create(System.prototype);
@@ -32,16 +32,17 @@ Collision.prototype.tick = function() {
         bodies.push(body);
     }
 
-    this.mouseCollision = _(bodies).map(function(body) {
+    this.mouseCollisions = _(bodies).map(function(body) {
         return {
             body: body,
+            entity: body.getOwningEntity(),
             intersect: raycaster.intersectObject(body.object)[0]
         }
     }).filter(function(result) {
         return result.intersect != null;
     }).sortBy(function(result) {
         return result.intersect.distance;
-    }).value()[0];
+    }).value();
 
 };
 

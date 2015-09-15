@@ -2,12 +2,15 @@ var THREE = require('three');
 
 var runGame = require('../core/rungame');
 var Entity = require('../core/entity');
+
 var RenderComponent = require('../core/components/rendercomponent');
 var CollisionBody = require('../core/components/collisionbody');
 var LightComponent = require('../core/components/lightcomponent');
-var Grid = require('./components/grid');
-var RotateCamera = require('./components/rotatecamera');
-var Highlight = require('./components/highlight');
+var InputComponent = require('../core/components/inputcomponent');
+
+var GridController = require('./components/gridcontroller');
+var CameraController = require('./components/cameracontroller');
+var InputController = require('./components/inputcontroller');
 var ChunkController = require('./components/chunkcontroller');
 
 window.onload = function() {
@@ -17,7 +20,9 @@ window.onload = function() {
     var game = new Game({
         keyMap: {
             'up': ['w'],
-            'down': ['s']
+            'down': ['s'],
+            'multiMode': ['m'],
+            'remove': ['shift']
         }
     });
 
@@ -36,7 +41,7 @@ var addGrid = function(game) {
     game.addEntity(entity);
 
     entity.addComponent(RenderComponent);
-    entity.addComponent(Grid);
+    entity.addComponent(GridController);
     entity.addComponent(CollisionBody);
 };
 
@@ -57,8 +62,9 @@ var addInput = function(game) {
 
     game.addEntity(entity);
 
-    entity.addComponent(RotateCamera);
-    entity.addComponent(Highlight);
+    entity.addComponent(CameraController);
+    entity.addComponent(InputController);
+    var inputComponent = entity.addComponent(InputComponent);
 };
 
 var addLights = function(game) {
@@ -74,8 +80,4 @@ var addLights = function(game) {
     var directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
     directionalLight.position.set(0.2, 0.5, 0.4);
     directional.light = directionalLight;
-
-    // var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    // directionalLight.position.set(0, 1, 0);
-    // scene.add(directionalLight);
 }
