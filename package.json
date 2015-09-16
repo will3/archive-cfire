@@ -5,7 +5,7 @@
     "scripts": {
         "start": "nodemon ./site/bin/www",
         "test": "mocha ./core/test --recursive --watch",
-        "build": "watchify ./app/app.js -o ./site/public/javascripts/bundle.js"
+        "build": "watchify ./app/app.js -o ./site/public/javascripts/bundle.js -v"
     },
     "dependencies": {
         "assert": "^1.3.0",

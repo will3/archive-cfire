@@ -48,76 +48,88 @@ InputController.prototype.start = function() {
     assert.object(this.input, 'input');
     assert.object(this.inputComponent, 'inputComponent');
 
-    this.inputComponent.keydown('up', function() {
-        this.gridController.gridY += 1;
-        this.gridController.updateObjects();
-    }.bind(this));
+    this.inputComponent.keydown('up', this.upPressed.bind(this));
+    this.inputComponent.keydown('down', this.downPressed.bind(this));
+    this.inputComponent.keydown('multiMode', this.multiModePressed.bind(this));
+    this.inputComponent.keydown('remove', this.removePressed.bind(this));
+    this.inputComponent.keyup('remove', this.removeReleased.bind(this));
+    this.inputComponent.mousedown(this.onMousedown.bind(this));
+    this.inputComponent.mouseup(this.onMouseup.bind(this));
+    this.inputComponent.mousemove(this.onMousemove.bind(this));
+};
 
-    this.inputComponent.keydown('down', function() {
-        this.gridController.gridY -= 1;
-        this.gridController.updateObjects();
-    }.bind(this));
+InputController.prototype.upPressed = function() {
+    this.gridController.gridY += 1;
+    this.gridController.updateCollisionBody();
+    this.gridController.updateGrid(this.chunkController.chunk);
+};
 
-    this.inputComponent.keydown('multiMode', function() {
-        this.multiMode = !this.multiMode;
-    }.bind(this));
+InputController.prototype.downPressed = function() {
+    this.gridController.gridY -= 1;
+    this.gridController.updateCollisionBody();
+    this.gridController.updateGrid(this.chunkController.chunk);
+};
 
-    this.inputComponent.keydown('remove', function() {
-        this.isRemove = true;
-    }.bind(this));
+InputController.prototype.multiModePressed = function() {
+    this.multiMode = !this.multiMode;
+};
 
-    this.inputComponent.keyup('remove', function() {
-        this.isRemove = false;
-    }.bind(this));
+InputController.prototype.removePressed = function() {
+    this.isRemove = true;
+};
 
-    this.inputComponent.mousedown(function() {
-        this.mousehold = true;
-        this.lastMousedownTime = new Date().getTime();
-    }.bind(this));
-
-    this.inputComponent.mouseup(function() {
-        this.mousehold = false;
-
-        if (this.lastMousedownTime != null) {
-            var diff = new Date().getTime() - this.lastMousedownTime;
-
-            if (diff < this.clickThreshold) {
-                var coord = this.getCoord();
-
-                if (coord != null) {
-                    if (this.isRemove) {
-                        this.chunkController.removeBlock(coord);
-                    } else {
-                        this.chunkController.addBlock(coord);
-                    }
-                }
-            }
-        }
-    }.bind(this));
-
-    this.inputComponent.mousemove(function(e) {
-        var coord = this.getCoord();
-
-        if (coord != null && this.multiMode && this.mousehold) {
-            if (this.isRemove) {
-                this.chunkController.removeBlock(coord);
-            } else {
-                this.chunkController.addBlock(coord);
-            }
-        }
-
-        if (!this.multiMode) {
-            this.cameraController.rotateCamera({
-                x: e.dragX * this.xSpeed,
-                y: e.dragY * this.ySpeed
-            });
-        }
-    }.bind(this));
+InputController.prototype.removeReleased = function() {
+    this.isRemove = false;
 };
 
 InputController.prototype.tick = function() {
     var coord = this.getCoord();
     this.updateHighlight(coord);
+};
+
+InputController.prototype.onMousedown = function() {
+    this.mousehold = true;
+    this.lastMousedownTime = new Date().getTime();
+};
+
+InputController.prototype.onMouseup = function() {
+    this.mousehold = false;
+
+    if (this.lastMousedownTime != null) {
+        var diff = new Date().getTime() - this.lastMousedownTime;
+
+        if (diff < this.clickThreshold) {
+            var coord = this.getCoord();
+
+            if (coord != null) {
+                if (this.isRemove) {
+                    this.chunkController.removeBlock(coord);
+                } else {
+                    this.chunkController.addBlock(coord);
+                    this.gridController.updateGrid(this.chunkController.chunk);
+                }
+            }
+        }
+    }
+};
+
+InputController.prototype.onMousemove = function(e) {
+    var coord = this.getCoord();
+
+    if (coord != null && this.multiMode && this.mousehold) {
+        if (this.isRemove) {
+            this.chunkController.removeBlock(coord);
+        } else {
+            this.chunkController.addBlock(coord);
+        }
+    }
+
+    if (!this.multiMode) {
+        this.cameraController.rotateCamera({
+            x: e.dragX * this.xSpeed,
+            y: e.dragY * this.ySpeed
+        });
+    }
 };
 
 //update high light cube, returns coord of high light, return null if no mouse overs
