@@ -1,3 +1,5 @@
+var _ = require('lodash');
+
 var Component = require('../component');
 
 var InputComponent = function() {
@@ -23,10 +25,24 @@ InputComponent.prototype.bind = function(event, type, func) {
 };
 
 InputComponent.prototype.keydown = function(event, func) {
+    if (_.isArray(event)) {
+        event.forEach(function(v) {
+            this.keydown(v, func);
+        }.bind(this));
+        return;
+    }
+
     this.bind(event, 'keydown', func);
 };
 
 InputComponent.prototype.keyup = function(event, func) {
+    if (_.isArray(event)) {
+        event.forEach(function(v) {
+            this.keyup(v, func);
+        }.bind(this));
+        return;
+    }
+
     this.bind(event, 'keyup', func);
 };
 

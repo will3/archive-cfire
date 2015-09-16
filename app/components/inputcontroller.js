@@ -28,6 +28,11 @@ var InputController = function() {
     this.isRemove = false;
 
     this.input = null;
+
+    this.axis = null;
+    this.inputText = '';
+
+    this.scale = new THREE.Vector3(1, 1, 1);
 };
 
 InputController.prototype = Object.create(Component.prototype);
@@ -51,7 +56,14 @@ InputController.prototype.start = function() {
     this.inputComponent.keydown('down', this.downPressed.bind(this));
     this.inputComponent.keydown('remove', this.removePressed.bind(this));
     this.inputComponent.keyup('remove', this.removeReleased.bind(this));
-    this.inputComponent.keyup('grid', this.gridPressed.bind(this));
+    this.inputComponent.keydown('grid', this.gridPressed.bind(this));
+    this.inputComponent.keydown(['x', 'y', 'z'], function(key) {
+        this.setAxis(key);
+    }.bind(this));
+    this.inputComponent.keydown(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'], function(key) {
+        this.appendInput(key);
+    }.bind(this));
+    this.inputComponent.keydown('enter', this.enterInput.bind(this));
 
     this.inputComponent.mousedown(this.onMousedown.bind(this));
     this.inputComponent.mouseup(this.onMouseup.bind(this));
@@ -80,6 +92,36 @@ InputController.prototype.removeReleased = function() {
 
 InputController.prototype.gridPressed = function() {
     this.gridController.gridHidden = !this.gridController.gridHidden;
+};
+
+InputController.prototype.setAxis = function(axis) {
+    this.axis = axis;
+    this.processAxis();
+    this.inputText = '';
+};
+
+InputController.prototype.appendInput = function(key) {
+    this.inputText += key;
+    this.processAxis();
+};
+
+InputController.prototype.enterInput = function() {
+    this.processAxis();
+    this.inputText = '';
+    this.axis = null;
+};
+
+InputController.prototype.processAxis = function() {
+    if (this.axis === 'x') {
+        this.scale.x = parseFloat(this.inputText);
+        if (this.scale.x == NaN) this.scale.x = 1.0;
+    } else if (this.axis === 'y') {
+        this.scale.y = parseFloat(this.inputText);
+        if (this.scale.y == NaN) this.scale.y = 1.0;
+    } else if (this.axis === 'z') {
+        this.scale.z = parseFloat(this.inputText);
+        if (this.scale.z == NaN) this.scale.z = 1.0;
+    }
 };
 
 InputController.prototype.tick = function() {
@@ -150,6 +192,8 @@ InputController.prototype.updateHighlight = function(coord) {
     this.cube.position.x = coord.x * gridSize;
     this.cube.position.y = coord.y * gridSize;
     this.cube.position.z = coord.z * gridSize;
+
+    this.cube.scale.copy(this.scale);
 };
 
 InputController.prototype.getCoord = function() {

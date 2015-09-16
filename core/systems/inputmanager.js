@@ -57,22 +57,30 @@ InputManager.prototype.bindKeyMap = function() {
 
         keys.forEach(function(key) {
             MouseTrap.bind(key, function() {
-                if (!self.inputState.keydown(key)) {
-                    self.inputState.keydowns.push(key);
+                var eventCopy = event.slice(0);
+                return function() {
+                    for (var id in self.componentMap) {
+                        self.componentMap[id].bindings.forEach(function(binding) {
+                            if (binding.type == 'keydown' && binding.event == eventCopy) {
+                                binding.func(eventCopy);
+                            }
+                        });
+                    }
                 }
-
-                if (!self.inputState.keyhold(key)) {
-                    self.inputState.keyholds.push(key);
-                }
-            });
+            }());
 
             MouseTrap.bind(key, function() {
-                if (!self.inputState.keyup(key)) {
-                    self.inputState.keyups.push(key);
+                var eventCopy = event.slice(0);
+                return function() {
+                    for (var id in self.componentMap) {
+                        self.componentMap[id].bindings.forEach(function(binding) {
+                            if (binding.type == 'keyup' && binding.event == eventCopy) {
+                                binding.func(eventCopy);
+                            }
+                        });
+                    }
                 }
-
-                _.pull(self.inputState.keyholds, key);
-            }, 'keyup');
+            }(), 'keyup');
         });
     }
 };
@@ -122,10 +130,6 @@ InputManager.prototype.tick = function() {
 
     for (var id in this.componentMap) {
         var inputComponent = this.componentMap[id];
-
-        inputComponent.bindings.forEach(function(binding) {
-            self.processBinding(binding);
-        });
 
         inputComponent.mousedownFunc.forEach(function(func) {
             if (self.inputState.mousedown) {
