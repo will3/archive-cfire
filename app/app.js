@@ -18,11 +18,7 @@ window.onload = function() {
     var Game = require('../core/game');
 
     var game = new Game({
-        keyMap: {
-            'up': ['w'],
-            'down': ['s'],
-            'remove': ['shift']
-        }
+        keyMap: require('./keymap')
     });
 
     addGrid(game);

@@ -11,6 +11,9 @@ var RenderComponent = function() {
     //wether to perform a redraw in the next frame
     //used by renderer
     this.needsRedraw = false;
+
+    //visible
+    this.visible = true;
 };
 
 RenderComponent.prototype = Object.create(Component.prototype);

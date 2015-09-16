@@ -65,6 +65,7 @@ Renderer.prototype.tick = function() {
         renderComponent.object.position.copy(renderComponent.transform.position);
         renderComponent.object.rotation.copy(renderComponent.transform.rotation);
         renderComponent.object.scale.copy(renderComponent.transform.scale);
+        renderComponent.object.visible = renderComponent.visible;
     }
 
     this.renderer.render(this.scene, this.camera);

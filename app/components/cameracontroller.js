@@ -7,6 +7,9 @@ var CameraController = function() {
     this.distance = 1000;
 
     this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');
+
+    this.rotation.x = -Math.PI / 4.0;
+    this.rotation.y = Math.PI / 4.0;
 };
 
 CameraController.prototype = Object.create(Component.prototype);

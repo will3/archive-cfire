@@ -17,6 +17,8 @@ var GridController = function() {
 
     this.renderComponent = null;
     this.collisionBody = null;
+
+    this.gridHidden = false;
 };
 
 GridController.prototype = Object.create(Component.prototype);
@@ -31,6 +33,10 @@ GridController.prototype.start = function() {
 
     this.updateGrid();
     this.updateCollisionBody();
+};
+
+GridController.prototype.tick = function() {
+    this.renderComponent.visible = !this.gridHidden;
 };
 
 GridController.prototype.updateGrid = function(chunk) {

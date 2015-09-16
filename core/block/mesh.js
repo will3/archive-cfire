@@ -103,7 +103,7 @@ module.exports = function(chunk, params) {
     params = params || {};
     var meshers = params.meshers || {};
     var gridSize = params.gridSize || 10;
-    var gap = params.gap || 0.05;
+    var gap = params.gap || 0.0;
 
     var geometry = new THREE.Geometry();
 
