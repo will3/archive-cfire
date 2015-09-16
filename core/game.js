@@ -87,6 +87,10 @@ Game.prototype = {
         });
     },
 
+    getEntityByName: function(name) {
+        return this.entityManager.getEntityByName(name);
+    },
+
     addEntity: function(entity) {
         this.entityManager.addEntity(entity);
     },

@@ -45,8 +45,7 @@ GridController.prototype.updateGrid = function(chunk) {
 };
 
 GridController.prototype.updateCollisionBody = function() {
-    var largeNumber = 99999;
-    this.collisionBody.object = plane(largeNumber, this.getY());
+    this.collisionBody.object = plane(30 * this.gridSize, this.getY());
 };
 
 GridController.prototype.getY = function() {

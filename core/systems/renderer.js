@@ -1,5 +1,6 @@
-var RenderComponent = require("../components/rendercomponent");
-var THREE = require("three");
+var RenderComponent = require('../components/rendercomponent');
+var CollisionBody = require('../components/collisionbody');
+var THREE = require('three');
 var System = require('../system');
 
 var Renderer = function(container, window) {

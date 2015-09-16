@@ -9,10 +9,6 @@ var InputState = function() {
 
     this.mouseX = 0;
     this.mouseY = 0;
-    this.mouseMoveX = 0;
-    this.mouseMoveY = 0;
-    this.mouseDragX = 0;
-    this.mouseDragY = 0;
 };
 
 InputState.prototype = {
@@ -39,10 +35,7 @@ InputState.prototype = {
     clearTemporaryStates: function() {
         this.keydowns = [];
         this.keyups = [];
-        this.mouseMoveX = 0;
-        this.mouseMoveY = 0;
-        this.mouseDragX = 0;
-        this.mouseDragY = 0;
+
         this.mousedown = false;
         this.mouseup = false;
     }

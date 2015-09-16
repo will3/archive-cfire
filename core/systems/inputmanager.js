@@ -86,34 +86,36 @@ InputManager.prototype.bindKeyMap = function() {
 };
 
 InputManager.prototype.handleMousedown = function(e) {
-    this.inputState.mousedown = true;
-    this.inputState.mousehold = true;
+    for (var id in this.componentMap) {
+        var component = this.componentMap[id];
+        component.mousedownFunc.forEach(function(func) {
+            func();
+        });
+    }
 };
 
 InputManager.prototype.handleMouseup = function() {
-    this.inputState.mouseup = true;
-    this.inputState.mousehold = false;
+    for (var id in this.componentMap) {
+        var component = this.componentMap[id];
+        component.mouseupFunc.forEach(function(func) {
+            func();
+        });
+    }
 };
 
 InputManager.prototype.handleMousemove = function(e) {
     this.inputState.mouseX = e.clientX;
     this.inputState.mouseY = e.clientY;
 
-    if (this.mouseLastX == null || this.mouseLastY == null) {
-        this.mouseLastX = e.clientX;
-        this.mouseLastY = e.clientY;
+    for (var id in this.componentMap) {
+        var component = this.componentMap[id];
+        component.mousemoveFunc.forEach(function(func) {
+            func({
+                x: e.clientX,
+                y: e.clientY
+            });
+        });
     }
-
-    this.inputState.mouseMoveX += (e.clientX - this.mouseLastX);
-    this.inputState.mouseMoveY += (e.clientY - this.mouseLastY);
-
-    if (this.inputState.mousehold) {
-        this.inputState.mouseDragX += (e.clientX - this.mouseLastX);
-        this.inputState.mouseDragY += (e.clientY - this.mouseLastY);
-    }
-
-    this.mouseLastX = e.clientX;
-    this.mouseLastY = e.clientY;
 };
 
 InputManager.prototype.handleMouseleave = function() {
@@ -125,86 +127,9 @@ InputManager.prototype.start = function() {
     this.bindKeyMap();
 };
 
-InputManager.prototype.tick = function() {
-    var self = this;
-
-    for (var id in this.componentMap) {
-        var inputComponent = this.componentMap[id];
-
-        inputComponent.mousedownFunc.forEach(function(func) {
-            if (self.inputState.mousedown) {
-                func();
-            }
-        });
-
-        inputComponent.mouseupFunc.forEach(function(func) {
-            if (self.inputState.mouseup) {
-                func();
-            }
-        });
-
-        inputComponent.mousemoveFunc.forEach(function(func) {
-            if (self.inputState.mouseMoveX != 0 || self.inputState.mouseMoveY != 0) {
-                func({
-                    x: self.inputState.mouseMoveX,
-                    y: self.inputState.mouseMoveY,
-                    dragX: self.inputState.mouseDragX,
-                    dragY: self.inputState.mouseDragY
-                });
-            }
-        });
-    };
-};
-
 InputManager.prototype.afterTick = function() {
     //clear temporary control states
     this.inputState.clearTemporaryStates();
-};
-
-InputManager.prototype.processBinding = function(binding) {
-    var keys = this.keyMap[binding.event];
-    var target = binding.target;
-    var func = binding.func;
-    var inputState = this.inputState;
-    //no key map exists
-    if (keys == null) {
-        return;
-    }
-
-    switch (binding.type) {
-        case 'keyup':
-            {
-                if (_.some(keys, function(key) {
-                        return inputState.keyup(key);
-                    })) {
-                    func();
-                }
-            }
-            break;
-
-        case 'keydown':
-            {
-                if (_.some(keys, function(key) {
-                        return inputState.keydown(key);
-                    })) {
-                    func();
-                }
-            }
-            break;
-
-        case 'keyhold':
-            {
-                if (_.some(keys, function(key) {
-                        return inputState.keyhold(key);
-                    })) {
-                    func();
-                }
-            }
-            break;
-
-        default:
-
-    }
 };
 
 module.exports = InputManager;

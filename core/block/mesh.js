@@ -70,9 +70,20 @@ var addFace = function(side, params) {
     var geometry = params.geometry;
     var faceMap = params.faceMap;
     var gap = params.gap;
+    var block = params.block || {};
+    var blockScale = block.scale || {
+        x: 1,
+        y: 1,
+        z: 1
+    };
+    var materialIndex = params.materialIndex;
 
     var vertices = _.map(mesher.getVertices(side), function(vertice) {
-        return vertice.multiplyScalar(1 - gap).add(coord).multiplyScalar(gridSize);
+        return vertice
+            .applyMatrix4(new THREE.Matrix4().makeScale(blockScale.x, blockScale.y, blockScale.z))
+            .multiplyScalar(1 - gap)
+            .add(coord)
+            .multiplyScalar(gridSize);
     });
 
     var indexOffset = geometry.vertices.length;
@@ -84,6 +95,7 @@ var addFace = function(side, params) {
     ]
 
     faces.forEach(function(face) {
+        face.materialIndex = materialIndex;
         geometry.faces.push(face);
         if (faceMap != null) {
             faceMap[geometry.faces.length - 1] = {
@@ -94,6 +106,10 @@ var addFace = function(side, params) {
         }
     });
 }
+
+var hasGap = function(block) {
+    return block.scale.x < 1 || block.scale.y < 1 || block.scale.z < 1;
+};
 
 //params
 //meshers   dictionary of meshers, if empty a default mesher will be used
@@ -107,14 +123,9 @@ module.exports = function(chunk, params) {
 
     var geometry = new THREE.Geometry();
 
-    chunk.visit(function(x, y, z, obj) {
-        var left = chunk.get(x - 1, y, z);
-        var right = chunk.get(x + 1, y, z);
-        var bottom = chunk.get(x, y - 1, z);
-        var top = chunk.get(x, y + 1, z);
-        var back = chunk.get(x, y, z - 1);
-        var front = chunk.get(x, y, z + 1);
+    var materials = [];
 
+    chunk.visit(function(x, y, z, block) {
         var mesher = defaultMesher;
 
         var coord = {
@@ -123,36 +134,67 @@ module.exports = function(chunk, params) {
             z: z
         };
 
+        var color = block.color || 0x000000
+        var materialIndex = _.findIndex(materials, function(material) {
+            return material.color.getHex() == color;
+        });
+
+        if (materialIndex == -1) {
+            materials.push(new THREE.MeshLambertMaterial({
+                color: block.color
+            }));
+
+            materialIndex = materials.length - 1;
+        }
+
         var mesherParams = {
             coord: coord,
             geometry: geometry,
             gridSize: gridSize,
             faceMap: params.faceMap,
             mesher: mesher,
-            gap: gap
+            gap: gap,
+            block: block,
+            materialIndex: materialIndex
         };
 
-        if (!left) {
+        if (hasGap(block)) {
+            addFace('left', mesherParams);
+            addFace('right', mesherParams);
+            addFace('bottom', mesherParams);
+            addFace('to', mesherParams);
+            addFace('back', mesherParams);
+            addFace('front', mesherParams);
+        }
+
+        var left = chunk.get(x - 1, y, z);
+        var right = chunk.get(x + 1, y, z);
+        var bottom = chunk.get(x, y - 1, z);
+        var top = chunk.get(x, y + 1, z);
+        var back = chunk.get(x, y, z - 1);
+        var front = chunk.get(x, y, z + 1);
+
+        if (!left || hasGap(left)) {
             addFace('left', mesherParams);
         }
 
-        if (!right) {
+        if (!right || hasGap(right)) {
             addFace('right', mesherParams);
         }
 
-        if (!bottom) {
+        if (!bottom || hasGap(bottom)) {
             addFace('bottom', mesherParams);
         }
 
-        if (!top) {
+        if (!top || hasGap(top)) {
             addFace('top', mesherParams);
         }
 
-        if (!back) {
+        if (!back || hasGap(back)) {
             addFace('back', mesherParams);
         }
 
-        if (!front) {
+        if (!front || hasGap(front)) {
             addFace('front', mesherParams);
         }
     });
@@ -160,5 +202,9 @@ module.exports = function(chunk, params) {
     geometry.mergeVertices();
     geometry.computeFaceNormals();
 
-    return geometry;
+    var material = new THREE.MeshFaceMaterial(materials);
+
+    var object = new THREE.Mesh(geometry, material);
+
+    return object;
 };

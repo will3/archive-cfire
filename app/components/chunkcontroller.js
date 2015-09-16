@@ -17,6 +17,8 @@ var ChunkController = function() {
     this.chunk = new Chunk();
 
     this.faceMap = {};
+
+    this.lineColor = 0x333333;
 }
 
 ChunkController.prototype = Object.create(Component.prototype);
@@ -29,8 +31,9 @@ ChunkController.prototype.start = function() {
     assert.object(this.collisionBody, 'collisionBody');
 };
 
-ChunkController.prototype.addBlock = function(coord) {
-    this.chunk.add(coord.x, coord.y, coord.z, '0');
+ChunkController.prototype.addBlock = function(coord, block) {
+    block = block || {};
+    this.chunk.add(coord.x, coord.y, coord.z, block);
     this.updateObjects();
 };
 
@@ -40,17 +43,12 @@ ChunkController.prototype.removeBlock = function(coord) {
 }
 
 ChunkController.prototype.updateObjects = function() {
-    var geometry = mesh(this.chunk, {
+    var object = mesh(this.chunk, {
         gridSize: this.gridSize,
         faceMap: this.faceMap
     });
 
-    var material = new THREE.MeshLambertMaterial({
-        color: 0xAAAAAA
-    });
-
-    var object = new THREE.Mesh(geometry, material);
-    var edges = new THREE.EdgesHelper(object, 0xAAAAAA);
+    var edges = new THREE.EdgesHelper(object, this.lineColor);
 
     var renderObject = new THREE.Object3D();
     renderObject.add(object);
