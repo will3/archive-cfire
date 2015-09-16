@@ -22,7 +22,6 @@ window.onload = function() {
         keyMap: {
             'up': ['w'],
             'down': ['s'],
-            'multiMode': ['m'],
             'remove': ['shift']
         }
     });
@@ -208,11 +207,12 @@ GridController.prototype.start = function() {
     assert.object(this.renderComponent, 'renderComponent');
     assert.object(this.collisionBody, 'collisionBody');
 
+    this.updateGrid();
     this.updateCollisionBody();
 };
 
 GridController.prototype.updateGrid = function(chunk) {
-    var object = require('./utils/getchunkgrid')(chunk, this.gridY, this.gridSize);
+    var object = require('./utils/getgrid')(chunk, this.gridY, this.gridSize);
     this.renderComponent.object = object;
 };
 
@@ -226,7 +226,7 @@ GridController.prototype.getY = function() {
 };
 
 module.exports = GridController;
-},{"../../core/component":10,"../../core/components/collisionbody":11,"../../core/components/rendercomponent":14,"./utils/getchunkgrid":6,"./utils/plane":7,"assert-plus":31,"lodash":33,"three":35}],5:[function(require,module,exports){
+},{"../../core/component":10,"../../core/components/collisionbody":11,"../../core/components/rendercomponent":14,"./utils/getgrid":6,"./utils/plane":7,"assert-plus":31,"lodash":33,"three":35}],5:[function(require,module,exports){
 var THREE = require('three');
 var assert = require('assert-plus');
 var _ = require('lodash');
@@ -254,7 +254,6 @@ var InputController = function() {
     this.xSpeed = 0.004;
     this.ySpeed = 0.004;
 
-    this.multiMode = false;
     this.isRemove = false;
 
     this.input = null;
@@ -279,7 +278,6 @@ InputController.prototype.start = function() {
 
     this.inputComponent.keydown('up', this.upPressed.bind(this));
     this.inputComponent.keydown('down', this.downPressed.bind(this));
-    this.inputComponent.keydown('multiMode', this.multiModePressed.bind(this));
     this.inputComponent.keydown('remove', this.removePressed.bind(this));
     this.inputComponent.keyup('remove', this.removeReleased.bind(this));
     this.inputComponent.mousedown(this.onMousedown.bind(this));
@@ -297,10 +295,6 @@ InputController.prototype.downPressed = function() {
     this.gridController.gridY -= 1;
     this.gridController.updateCollisionBody();
     this.gridController.updateGrid(this.chunkController.chunk);
-};
-
-InputController.prototype.multiModePressed = function() {
-    this.multiMode = !this.multiMode;
 };
 
 InputController.prototype.removePressed = function() {
@@ -345,20 +339,10 @@ InputController.prototype.onMouseup = function() {
 InputController.prototype.onMousemove = function(e) {
     var coord = this.getCoord();
 
-    if (coord != null && this.multiMode && this.mousehold) {
-        if (this.isRemove) {
-            this.chunkController.removeBlock(coord);
-        } else {
-            this.chunkController.addBlock(coord);
-        }
-    }
-
-    if (!this.multiMode) {
-        this.cameraController.rotateCamera({
-            x: e.dragX * this.xSpeed,
-            y: e.dragY * this.ySpeed
-        });
-    }
+    this.cameraController.rotateCamera({
+        x: e.dragX * this.xSpeed,
+        y: e.dragY * this.ySpeed
+    });
 };
 
 //update high light cube, returns coord of high light, return null if no mouse overs
@@ -386,10 +370,6 @@ InputController.prototype.updateHighlight = function(coord) {
 };
 
 InputController.prototype.getCoord = function() {
-    if (this.multiMode) {
-        return this.getGridCoord();
-    }
-
     return this.getChunkCoord() || this.getGridCoord();
 };
 
@@ -419,6 +399,7 @@ InputController.prototype.getGridCoord = function() {
 InputController.prototype.getChunkCoord = function() {
     var collisions = this.getGame().getMouseCollisions();
 
+    var self = this;
     var chunkCollision = _.find(collisions, function(collision) {
         return collision.entity == self.chunk;
     });
@@ -469,18 +450,8 @@ module.exports = InputController;
 var _ = require('lodash');
 var THREE = require('three');
 
-//given y, return list of x bounds by z and list of z bounds by x
-var getChunkGrid = function(chunk, gridY, gridSize) {
-
-    //get cross section
-    var coords = [];
-    var xLines = [];
-    chunk.visit(function(x, y, z, block) {
-        if (y != gridY) {
-            return;
-        }
-    });
-
+//get grid
+var getGrid = function(chunk, gridY, gridSize) {
     var overGrid = 1;
     var overDraw = 1;
     var minX = -9.5;
@@ -509,7 +480,7 @@ var getChunkGrid = function(chunk, gridY, gridSize) {
     return object;
 }
 
-module.exports = getChunkGrid;
+module.exports = getGrid;
 },{"lodash":33,"three":35}],7:[function(require,module,exports){
 var THREE = require('three');
 
@@ -638,14 +609,7 @@ var defaultMesher = {
     //  4   5
     //    3   2
     //  0   1
-    addFace: function(side, params) {
-        params = params || {};
-
-        var coord = params.coord || new THREE.Vector3();
-        var scale = params.gridSize || new THREE.Vector3(1, 1, 1);
-        var geometry = params.geometry;
-        var faceMap = params.faceMap;
-
+    getVertices: function(side) {
         var indices;
         switch (side) {
             case 'left':
@@ -670,31 +634,45 @@ var defaultMesher = {
                 return;
         }
 
-        var self = this;
-        var vertices = _.map(indices, function(indice) {
-            return self.getVertice(indice).add(coord).multiplyScalar(scale);
-        });
-
-        var indexOffset = geometry.vertices.length;
-        geometry.vertices.push.apply(geometry.vertices, vertices);
-
-        var faces = [
-            new THREE.Face3(indexOffset + 0, indexOffset + 1, indexOffset + 2),
-            new THREE.Face3(indexOffset + 2, indexOffset + 3, indexOffset + 0)
-        ];
-
-        faces.forEach(function(face) {
-            geometry.faces.push(face);
-            if (faceMap != null) {
-                faceMap[geometry.faces.length - 1] = {
-                    coord: coord,
-                    side: side,
-                    face: face
-                }
-            }
-        });
+        return _.map(indices, function(indice) {
+            return this.getVertice(indice);
+        }.bind(this));
     }
-};
+}
+
+var addFace = function(side, params) {
+    params = params || {};
+
+    var mesher = params.mesher;
+    var coord = params.coord || new THREE.Vector3();
+    var gridSize = params.gridSize || new THREE.Vector3(1, 1, 1);
+    var geometry = params.geometry;
+    var faceMap = params.faceMap;
+    var gap = params.gap;
+
+    var vertices = _.map(mesher.getVertices(side), function(vertice) {
+        return vertice.multiplyScalar(1 - gap).add(coord).multiplyScalar(gridSize);
+    });
+
+    var indexOffset = geometry.vertices.length;
+    geometry.vertices.push.apply(geometry.vertices, vertices);
+
+    var faces = [
+        new THREE.Face3(indexOffset + 0, indexOffset + 1, indexOffset + 2),
+        new THREE.Face3(indexOffset + 2, indexOffset + 3, indexOffset + 0)
+    ]
+
+    faces.forEach(function(face) {
+        geometry.faces.push(face);
+        if (faceMap != null) {
+            faceMap[geometry.faces.length - 1] = {
+                coord: coord,
+                side: side,
+                face: face
+            }
+        }
+    });
+}
 
 //params
 //meshers   dictionary of meshers, if empty a default mesher will be used
@@ -704,6 +682,7 @@ module.exports = function(chunk, params) {
     params = params || {};
     var meshers = params.meshers || {};
     var gridSize = params.gridSize || 10;
+    var gap = params.gap || 0.05;
 
     var geometry = new THREE.Geometry();
 
@@ -728,30 +707,32 @@ module.exports = function(chunk, params) {
             geometry: geometry,
             gridSize: gridSize,
             faceMap: params.faceMap,
+            mesher: mesher,
+            gap: gap
         };
 
         if (!left) {
-            mesher.addFace('left', mesherParams);
+            addFace('left', mesherParams);
         }
 
         if (!right) {
-            mesher.addFace('right', mesherParams);
+            addFace('right', mesherParams);
         }
 
         if (!bottom) {
-            mesher.addFace('bottom', mesherParams);
+            addFace('bottom', mesherParams);
         }
 
         if (!top) {
-            mesher.addFace('top', mesherParams);
+            addFace('top', mesherParams);
         }
 
         if (!back) {
-            mesher.addFace('back', mesherParams);
+            addFace('back', mesherParams);
         }
 
         if (!front) {
-            mesher.addFace('front', mesherParams);
+            addFace('front', mesherParams);
         }
     });
 
@@ -62408,9 +62389,7 @@ function drainQueue() {
         currentQueue = queue;
         queue = [];
         while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
+            currentQueue[queueIndex].run();
         }
         queueIndex = -1;
         len = queue.length;
@@ -62462,6 +62441,7 @@ process.binding = function (name) {
     throw new Error('process.binding is not supported');
 };
 
+// TODO(shtylman)
 process.cwd = function () { return '/' };
 process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
@@ -64386,7 +64366,7 @@ module.exports = nextTick;
 function nextTick(fn) {
   var args = new Array(arguments.length - 1);
   var i = 0;
-  while (i < args.length) {
+  while (i < arguments.length) {
     args[i++] = arguments[i];
   }
   process.nextTick(function afterTick() {

@@ -30,14 +30,7 @@ var defaultMesher = {
     //  4   5
     //    3   2
     //  0   1
-    addFace: function(side, params) {
-        params = params || {};
-
-        var coord = params.coord || new THREE.Vector3();
-        var scale = params.gridSize || new THREE.Vector3(1, 1, 1);
-        var geometry = params.geometry;
-        var faceMap = params.faceMap;
-
+    getVertices: function(side) {
         var indices;
         switch (side) {
             case 'left':
@@ -62,31 +55,45 @@ var defaultMesher = {
                 return;
         }
 
-        var self = this;
-        var vertices = _.map(indices, function(indice) {
-            return self.getVertice(indice).add(coord).multiplyScalar(scale);
-        });
-
-        var indexOffset = geometry.vertices.length;
-        geometry.vertices.push.apply(geometry.vertices, vertices);
-
-        var faces = [
-            new THREE.Face3(indexOffset + 0, indexOffset + 1, indexOffset + 2),
-            new THREE.Face3(indexOffset + 2, indexOffset + 3, indexOffset + 0)
-        ];
-
-        faces.forEach(function(face) {
-            geometry.faces.push(face);
-            if (faceMap != null) {
-                faceMap[geometry.faces.length - 1] = {
-                    coord: coord,
-                    side: side,
-                    face: face
-                }
-            }
-        });
+        return _.map(indices, function(indice) {
+            return this.getVertice(indice);
+        }.bind(this));
     }
-};
+}
+
+var addFace = function(side, params) {
+    params = params || {};
+
+    var mesher = params.mesher;
+    var coord = params.coord || new THREE.Vector3();
+    var gridSize = params.gridSize || new THREE.Vector3(1, 1, 1);
+    var geometry = params.geometry;
+    var faceMap = params.faceMap;
+    var gap = params.gap;
+
+    var vertices = _.map(mesher.getVertices(side), function(vertice) {
+        return vertice.multiplyScalar(1 - gap).add(coord).multiplyScalar(gridSize);
+    });
+
+    var indexOffset = geometry.vertices.length;
+    geometry.vertices.push.apply(geometry.vertices, vertices);
+
+    var faces = [
+        new THREE.Face3(indexOffset + 0, indexOffset + 1, indexOffset + 2),
+        new THREE.Face3(indexOffset + 2, indexOffset + 3, indexOffset + 0)
+    ]
+
+    faces.forEach(function(face) {
+        geometry.faces.push(face);
+        if (faceMap != null) {
+            faceMap[geometry.faces.length - 1] = {
+                coord: coord,
+                side: side,
+                face: face
+            }
+        }
+    });
+}
 
 //params
 //meshers   dictionary of meshers, if empty a default mesher will be used
@@ -96,6 +103,7 @@ module.exports = function(chunk, params) {
     params = params || {};
     var meshers = params.meshers || {};
     var gridSize = params.gridSize || 10;
+    var gap = params.gap || 0.05;
 
     var geometry = new THREE.Geometry();
 
@@ -120,30 +128,32 @@ module.exports = function(chunk, params) {
             geometry: geometry,
             gridSize: gridSize,
             faceMap: params.faceMap,
+            mesher: mesher,
+            gap: gap
         };
 
         if (!left) {
-            mesher.addFace('left', mesherParams);
+            addFace('left', mesherParams);
         }
 
         if (!right) {
-            mesher.addFace('right', mesherParams);
+            addFace('right', mesherParams);
         }
 
         if (!bottom) {
-            mesher.addFace('bottom', mesherParams);
+            addFace('bottom', mesherParams);
         }
 
         if (!top) {
-            mesher.addFace('top', mesherParams);
+            addFace('top', mesherParams);
         }
 
         if (!back) {
-            mesher.addFace('back', mesherParams);
+            addFace('back', mesherParams);
         }
 
         if (!front) {
-            mesher.addFace('front', mesherParams);
+            addFace('front', mesherParams);
         }
     });
 

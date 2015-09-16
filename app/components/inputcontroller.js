@@ -25,7 +25,6 @@ var InputController = function() {
     this.xSpeed = 0.004;
     this.ySpeed = 0.004;
 
-    this.multiMode = false;
     this.isRemove = false;
 
     this.input = null;
@@ -50,7 +49,6 @@ InputController.prototype.start = function() {
 
     this.inputComponent.keydown('up', this.upPressed.bind(this));
     this.inputComponent.keydown('down', this.downPressed.bind(this));
-    this.inputComponent.keydown('multiMode', this.multiModePressed.bind(this));
     this.inputComponent.keydown('remove', this.removePressed.bind(this));
     this.inputComponent.keyup('remove', this.removeReleased.bind(this));
     this.inputComponent.mousedown(this.onMousedown.bind(this));
@@ -68,10 +66,6 @@ InputController.prototype.downPressed = function() {
     this.gridController.gridY -= 1;
     this.gridController.updateCollisionBody();
     this.gridController.updateGrid(this.chunkController.chunk);
-};
-
-InputController.prototype.multiModePressed = function() {
-    this.multiMode = !this.multiMode;
 };
 
 InputController.prototype.removePressed = function() {
@@ -116,20 +110,10 @@ InputController.prototype.onMouseup = function() {
 InputController.prototype.onMousemove = function(e) {
     var coord = this.getCoord();
 
-    if (coord != null && this.multiMode && this.mousehold) {
-        if (this.isRemove) {
-            this.chunkController.removeBlock(coord);
-        } else {
-            this.chunkController.addBlock(coord);
-        }
-    }
-
-    if (!this.multiMode) {
-        this.cameraController.rotateCamera({
-            x: e.dragX * this.xSpeed,
-            y: e.dragY * this.ySpeed
-        });
-    }
+    this.cameraController.rotateCamera({
+        x: e.dragX * this.xSpeed,
+        y: e.dragY * this.ySpeed
+    });
 };
 
 //update high light cube, returns coord of high light, return null if no mouse overs
@@ -157,10 +141,6 @@ InputController.prototype.updateHighlight = function(coord) {
 };
 
 InputController.prototype.getCoord = function() {
-    if (this.multiMode) {
-        return this.getGridCoord();
-    }
-
     return this.getChunkCoord() || this.getGridCoord();
 };
 
@@ -190,6 +170,7 @@ InputController.prototype.getGridCoord = function() {
 InputController.prototype.getChunkCoord = function() {
     var collisions = this.getGame().getMouseCollisions();
 
+    var self = this;
     var chunkCollision = _.find(collisions, function(collision) {
         return collision.entity == self.chunk;
     });

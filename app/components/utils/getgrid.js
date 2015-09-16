@@ -1,18 +1,8 @@
 var _ = require('lodash');
 var THREE = require('three');
 
-//given y, return list of x bounds by z and list of z bounds by x
-var getChunkGrid = function(chunk, gridY, gridSize) {
-
-    //get cross section
-    var coords = [];
-    var xLines = [];
-    chunk.visit(function(x, y, z, block) {
-        if (y != gridY) {
-            return;
-        }
-    });
-
+//get grid
+var getGrid = function(chunk, gridY, gridSize) {
     var overGrid = 1;
     var overDraw = 1;
     var minX = -9.5;
@@ -41,4 +31,4 @@ var getChunkGrid = function(chunk, gridY, gridSize) {
     return object;
 }
 
-module.exports = getChunkGrid;
+module.exports = getGrid;

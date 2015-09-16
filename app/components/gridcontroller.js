@@ -29,11 +29,12 @@ GridController.prototype.start = function() {
     assert.object(this.renderComponent, 'renderComponent');
     assert.object(this.collisionBody, 'collisionBody');
 
+    this.updateGrid();
     this.updateCollisionBody();
 };
 
 GridController.prototype.updateGrid = function(chunk) {
-    var object = require('./utils/getchunkgrid')(chunk, this.gridY, this.gridSize);
+    var object = require('./utils/getgrid')(chunk, this.gridY, this.gridSize);
     this.renderComponent.object = object;
 };
 

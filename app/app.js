@@ -21,7 +21,6 @@ window.onload = function() {
         keyMap: {
             'up': ['w'],
             'down': ['s'],
-            'multiMode': ['m'],
             'remove': ['shift']
         }
     });
