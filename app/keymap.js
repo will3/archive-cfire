@@ -1,6 +1,10 @@
 module.exports = {
-    'up': ['w'],
-    'down': ['s'],
-    'remove': ['shift'],
-    'grid': ['g']
+    'up': 'up',
+    'down': 'down',
+    'remove': 'shift',
+    'grid': 'g',
+    'scale': 's',
+    'x': 'x',
+    'y': 'y',
+    'z': 'z'
 }

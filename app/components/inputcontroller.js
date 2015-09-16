@@ -52,12 +52,6 @@ InputController.prototype.start = function() {
     this.inputComponent.keydown('remove', this.removePressed.bind(this));
     this.inputComponent.keyup('remove', this.removeReleased.bind(this));
     this.inputComponent.keyup('grid', this.gridPressed.bind(this));
-    this.inputComponent.keydown('tool1', function() {
-        this.toolPressed(1);
-    }.bind(this));
-    this.inputComponent.keydown('tool2', function() {
-        this.toolPressed(2);
-    }.bind(this));
 
     this.inputComponent.mousedown(this.onMousedown.bind(this));
     this.inputComponent.mouseup(this.onMouseup.bind(this));
@@ -86,10 +80,6 @@ InputController.prototype.removeReleased = function() {
 
 InputController.prototype.gridPressed = function() {
     this.gridController.gridHidden = !this.gridController.gridHidden;
-};
-
-InputController.prototype.toolPressed = function(index) {
-    this.tool = this.tools[index];
 };
 
 InputController.prototype.tick = function() {
@@ -121,12 +111,12 @@ InputController.prototype.onMouseClick = function() {
         return;
     }
 
-        if (this.isRemove) {
-            this.chunkController.removeBlock(coord);
-        } else {
-            this.chunkController.addBlock(coord);
-            this.gridController.updateGrid(this.chunkController.chunk);
-        }
+    if (this.isRemove) {
+        this.chunkController.removeBlock(coord);
+    } else {
+        this.chunkController.addBlock(coord);
+        this.gridController.updateGrid(this.chunkController.chunk);
+    }
 };
 
 InputController.prototype.onMousemove = function(e) {

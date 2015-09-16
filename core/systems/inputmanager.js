@@ -51,6 +51,10 @@ InputManager.prototype.bindKeyMap = function() {
 
     for (var event in this.keyMap) {
         var keys = this.keyMap[event];
+        if (!_.isArray(keys)) {
+            keys = [keys];
+        }
+
         keys.forEach(function(key) {
             MouseTrap.bind(key, function() {
                 if (!self.inputState.keydown(key)) {
