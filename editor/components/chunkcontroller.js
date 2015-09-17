@@ -45,16 +45,27 @@ ChunkController.prototype.removeBlock = function(coord) {
 }
 
 ChunkController.prototype.updateObjects = function() {
+    var edges = [];
     var object = mesh(this.chunk, {
         gridSize: this.gridSize,
-        faceMap: this.faceMap
+        faceMap: this.faceMap,
+        edges: edges
     });
 
-    var edges = new THREE.EdgesHelper(object, this.lineColor);
+    var geometry = new THREE.Geometry();
+    for (var i in edges) {
+        var edge = edges[i];
+        geometry.vertices.push(edge.start);
+        geometry.vertices.push(edge.end);
+    };
+
+    var edgeObject = new THREE.Line(geometry, new THREE.LineBasicMaterial({
+        color: 0x000000
+    }), THREE.LinePieces);
 
     var renderObject = new THREE.Object3D();
     renderObject.add(object);
-    renderObject.add(edges);
+    renderObject.add(edgeObject);
 
     this.renderComponent.object = renderObject;
     this.collisionBody.object = object;

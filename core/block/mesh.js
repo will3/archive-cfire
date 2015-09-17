@@ -69,6 +69,7 @@ var addFace = function(side, params) {
     var gridSize = params.gridSize || new THREE.Vector3(1, 1, 1);
     var geometry = params.geometry;
     var faceMap = params.faceMap;
+    var edges = params.edges;
     var gap = params.gap;
     var block = params.block || {};
     var blockScale = block.scale || {
@@ -105,16 +106,44 @@ var addFace = function(side, params) {
             }
         }
     });
+
+    if (edges != null) {
+        edges.push(new THREE.Line3(vertices[0], vertices[1]));
+        edges.push(new THREE.Line3(vertices[1], vertices[2]));
+        edges.push(new THREE.Line3(vertices[2], vertices[3]));
+        edges.push(new THREE.Line3(vertices[3], vertices[0]));
+    }
 }
 
 var hasGap = function(block) {
     return block.scale.x < 1 || block.scale.y < 1 || block.scale.z < 1;
 };
 
+var mergeEdges = function(edges) {
+    var precision = 4;
+    var multiple = Math.pow(10, 4);
+
+    var map = {};
+
+    for (var i in edges) {
+        var line = edges[i];
+        var id = hashVertice(line.start, multiple) + '_' + hashVertice(line.end, multiple);
+        map[id] = line;
+    }
+
+    return _.values(map);
+}
+
+var hashVertice = function(vertice, multiple) {
+    var id = Math.round(vertice * multiple) + '_' + Math.round(vertice * multiple) + '_' + Math.round(vertice * multiple);
+    return id;
+}
+
 //params
 //meshers   dictionary of meshers, if empty a default mesher will be used
 //gridSize  grid size to use
 //faceMap   if not empty, populate this instance with face mapping info
+//edges     if not empty, populate this with Line3 array
 module.exports = function(chunk, params) {
     params = params || {};
     var meshers = params.meshers || {};
@@ -155,7 +184,8 @@ module.exports = function(chunk, params) {
             mesher: mesher,
             gap: gap,
             block: block,
-            materialIndex: materialIndex
+            materialIndex: materialIndex,
+            edges: params.edges
         };
 
         if (hasGap(block)) {
@@ -199,8 +229,12 @@ module.exports = function(chunk, params) {
         }
     });
 
+    //merge vertices and update face indices
     geometry.mergeVertices();
     geometry.computeFaceNormals();
+
+    //merge edges
+    params.edges = mergeEdges(params.edges);
 
     var material = new THREE.MeshFaceMaterial(materials);
 
