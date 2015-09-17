@@ -4,6 +4,8 @@ module.exports = function(game, params) {
 
     var frameInterval = 1000.0 / tickRate;
 
+    game.start();
+
     var interval = function() {
         game.tick(frameInterval);
         game.afterTick();

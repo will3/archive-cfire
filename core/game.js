@@ -31,20 +31,11 @@ var Game = function(params) {
     }
 
     this.systems = params.systems || require('./systems');
-    var self = this;
-    this.systems.forEach(function(system) {
-        system.setEntityManager(self.entityManager);
-    });
 
     this.renderer = this.getSystem(Renderer);
     this.inputManager = this.getSystem(InputManager);
     this.collision = this.getSystem(Collision);
     this.console = this.getSystem(Console);
-
-    //disable right click
-    document.oncontextmenu = document.body.oncontextmenu = function() {
-        return false;
-    }
 };
 
 Game.prototype = {
@@ -66,6 +57,18 @@ Game.prototype = {
         return _.find(this.systems, function(system) {
             return system instanceof type;
         });
+    },
+
+    start: function() {
+        var self = this;
+        this.systems.forEach(function(system) {
+            system.setEntityManager(self.entityManager);
+        });
+
+        //disable right click
+        document.oncontextmenu = document.body.oncontextmenu = function() {
+            return false;
+        }
     },
 
     tick: function(elapsedTime) {
