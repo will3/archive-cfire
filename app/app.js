@@ -48,6 +48,12 @@ window.onload = function() {
                 'rgb(96, 125, 139)'
             ],
         ],
+        show: function(color) {
+            inputController.hasFocus = false;
+        },
+        hide: function(color) {
+            inputController.hasFocus = true;
+        },
         change: function(color) {
             inputController.color = new THREE.Color(color.toRgbString()).getHex()
         }

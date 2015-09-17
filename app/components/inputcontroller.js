@@ -8,6 +8,7 @@ var InputComponent = require('../../core/components/inputcomponent');
 var Grid = require('./gridcontroller');
 var ChunkController = require('./chunkcontroller');
 var CameraController = require('./cameracontroller');
+var AddBlock = require('./commands/addblock');
 
 var InputController = function() {
     Component.call(this);
@@ -36,6 +37,12 @@ var InputController = function() {
 
     this.lastX = null;
     this.lastY = null;
+
+    this.hasFocus = true;
+
+    this.commands = [];
+
+    this.redoCommands = [];
 };
 
 InputController.prototype = Object.create(Component.prototype);
@@ -67,6 +74,8 @@ InputController.prototype.start = function() {
         this.appendInput(key);
     }.bind(this));
     this.inputComponent.keydown('enter', this.enterInput.bind(this));
+    this.inputComponent.keydown('undo', this.undo.bind(this));
+    this.inputComponent.keydown('redo', this.redo.bind(this));
 
     this.inputComponent.mousedown(this.onMousedown.bind(this));
     this.inputComponent.mouseup(this.onMouseup.bind(this));
@@ -164,6 +173,10 @@ InputController.prototype.onMouseup = function() {
 };
 
 InputController.prototype.onMouseClick = function() {
+    if (!this.hasFocus) {
+        return;
+    }
+
     var coord = this.getCoord();
 
     if (coord == null) {
@@ -173,14 +186,21 @@ InputController.prototype.onMouseClick = function() {
     if (this.isRemove) {
         this.chunkController.removeBlock(coord);
     } else {
-        this.chunkController.addBlock(coord, {
-            scale: {
-                x: this.scale.x,
-                y: this.scale.y,
-                z: this.scale.z
-            },
-            color: this.color
+        var command = new AddBlock({
+            chunkController: this.chunkController,
+            coord: coord,
+            block: {
+                scale: {
+                    x: this.scale.x,
+                    y: this.scale.y,
+                    z: this.scale.z
+                },
+                color: this.color
+            }
         });
+
+        this.runCommand(command);
+
         this.gridController.updateGrid(this.chunkController.chunk);
     }
 };
@@ -204,6 +224,34 @@ InputController.prototype.onMouseDrag = function(dragX, dragY) {
         x: dragX * this.xSpeed,
         y: dragY * this.ySpeed
     });
+};
+
+InputController.prototype.runCommand = function(command) {
+    command.run();
+    this.commands.push(command);
+    this.redoCommands = [];
+};
+
+InputController.prototype.undo = function() {
+    if (this.commands.length == 0) {
+        return;
+    }
+
+    var lastCommand = this.commands[this.commands.length - 1];
+    lastCommand.undo();
+    _.pull(this.commands, lastCommand);
+    this.redoCommands.push(lastCommand);
+};
+
+InputController.prototype.redo = function() {
+    if (this.redoCommands.length == 0) {
+        return;
+    }
+
+    var lastCommand = this.redoCommands[this.redoCommands.length - 1];
+    lastCommand.run();
+    _.pull(this.redoCommands, lastCommand);
+    this.commands.push(lastCommand);
 };
 
 //update high light cube, returns coord of high light, return null if no mouse overs

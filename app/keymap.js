@@ -19,5 +19,8 @@ module.exports = {
     '0': '0',
     '.': '.',
     '-': '-',
-    'enter': 'enter'
+    'enter': 'enter',
+    'block': 'b',
+    'undo': ['ctrl+z', 'command+z'],
+    'redo': ['ctrl+shift+z', 'command+shift+z']
 }
