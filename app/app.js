@@ -13,6 +13,8 @@ var GridController = require('./components/gridcontroller');
 var CameraController = require('./components/cameracontroller');
 var InputController = require('./components/inputcontroller');
 var ChunkController = require('./components/chunkcontroller');
+var PointerController = require('./components/pointercontroller');
+
 require('spectrum-colorpicker')($);
 
 var defaultColor = 'rgb(0, 188, 212)';
@@ -69,6 +71,7 @@ window.onload = function() {
     addChunk(game);
     addInput(game);
     addLights(game);
+    addPointer(game);
 
     var inputController = game.getEntityByName('input').getComponent(InputController);
 
@@ -110,6 +113,16 @@ var addInput = function(game) {
     entity.addComponent(InputComponent);
 };
 
+var addPointer = function(game) {
+    var entity = new Entity();
+    entity.name = 'pointer';
+
+    game.addEntity(entity);
+
+    entity.addComponent(RenderComponent);
+    entity.addComponent(PointerController);
+};
+
 var addLights = function(game) {
     var entity = new Entity();
     entity.name = 'lights';
@@ -123,4 +136,4 @@ var addLights = function(game) {
     var directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
     directionalLight.position.set(0.2, 0.5, 0.4);
     directional.light = directionalLight;
-}
+};

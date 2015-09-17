@@ -8,32 +8,32 @@ var InputComponent = require('../../core/components/inputcomponent');
 var Grid = require('./gridcontroller');
 var ChunkController = require('./chunkcontroller');
 var CameraController = require('./cameracontroller');
+var PointerController = require('./pointercontroller');
+
 var AddBlock = require('./commands/addblock');
 
 var InputController = function() {
     Component.call(this);
 
-    this.cube = null;
-
+    //entity and components
     this.grid = null;
     this.chunk = null;
     this.gridController = null;
     this.chunkController = null;
     this.cameraController = null;
+    this.pointerController = null;
 
+    //configurations
     this.clickThreshold = 200;
     this.lastMousedownTime = null;
     this.xSpeed = 0.004;
     this.ySpeed = 0.004;
 
+    //state
     this.isRemove = false;
-
-    this.input = null;
 
     this.axis = [];
     this.inputText = '';
-
-    this.scale = new THREE.Vector3(1, 1, 1);
 
     this.lastX = null;
     this.lastY = null;
@@ -56,14 +56,16 @@ InputController.prototype.start = function() {
     this.input = this.getGame().input;
     this.cameraController = this.getComponent(CameraController);
     this.inputComponent = this.getComponent(InputComponent);
+    this.pointerController = this.getEntityByName('pointer').getComponent(PointerController);
 
     assert.object(this.grid, 'grid');
     assert.object(this.chunkController, 'chunkController');
     assert.object(this.input, 'input');
     assert.object(this.inputComponent, 'inputComponent');
+    assert.object(this.pointerController, 'pointerController');
 
-    this.inputComponent.keydown('up', this.upPressed.bind(this));
-    this.inputComponent.keydown('down', this.downPressed.bind(this));
+    this.inputComponent.keydown('up', this.moveGridUp.bind(this));
+    this.inputComponent.keydown('down', this.moveGridDown.bind(this));
     this.inputComponent.keydown('remove', this.removePressed.bind(this));
     this.inputComponent.keyup('remove', this.removeReleased.bind(this));
     this.inputComponent.keydown('grid', this.gridPressed.bind(this));
@@ -82,13 +84,13 @@ InputController.prototype.start = function() {
     this.inputComponent.mousemove(this.onMousemove.bind(this));
 };
 
-InputController.prototype.upPressed = function() {
+InputController.prototype.moveGridUp = function() {
     this.gridController.gridY += 1;
     this.gridController.updateCollisionBody();
     this.gridController.updateGrid(this.chunkController.chunk);
 };
 
-InputController.prototype.downPressed = function() {
+InputController.prototype.moveGridDown = function() {
     this.gridController.gridY -= 1;
     this.gridController.updateCollisionBody();
     this.gridController.updateGrid(this.chunkController.chunk);
@@ -126,13 +128,13 @@ InputController.prototype.enterInput = function() {
 
 InputController.prototype.processAxis = function() {
     if (_.includes(this.axis, 'x')) {
-        this.scale.x = this.getInputNum(1.0);
+        this.pointerController.transform.scale.x = this.getInputNum(1.0);
     }
     if (_.includes(this.axis, 'y')) {
-        this.scale.y = this.getInputNum(1.0);
+        this.pointerController.transform.scale.y = this.getInputNum(1.0);
     }
     if (_.includes(this.axis, 'z')) {
-        this.scale.z = this.getInputNum(1.0);
+        this.pointerController.transform.scale.z = this.getInputNum(1.0);
     }
 };
 
@@ -152,7 +154,13 @@ InputController.prototype.getInputNum = function(defaultValue) {
 
 InputController.prototype.tick = function() {
     var coord = this.getCoord();
-    this.updateHighlight(coord);
+
+    if (coord == null) {
+        this.pointerController.setVisible(false);
+    } else {
+        this.pointerController.setVisible(true);
+        this.pointerController.setCoord(coord);
+    }
 };
 
 InputController.prototype.onMousedown = function() {
@@ -189,20 +197,24 @@ InputController.prototype.onMouseClick = function() {
         var command = new AddBlock({
             chunkController: this.chunkController,
             coord: coord,
-            block: {
-                scale: {
-                    x: this.scale.x,
-                    y: this.scale.y,
-                    z: this.scale.z
-                },
-                color: this.color
-            }
+            block: this.getBlock()
         });
 
         this.runCommand(command);
 
         this.gridController.updateGrid(this.chunkController.chunk);
     }
+};
+
+InputController.prototype.getBlock = function() {
+    return {
+        scale: {
+            x: this.pointerController.transform.scale.x,
+            y: this.pointerController.transform.scale.y,
+            z: this.pointerController.transform.scale.z,
+        },
+        color: this.color
+    };
 };
 
 InputController.prototype.onMousemove = function(e) {
@@ -252,32 +264,6 @@ InputController.prototype.redo = function() {
     lastCommand.run();
     _.pull(this.redoCommands, lastCommand);
     this.commands.push(lastCommand);
-};
-
-//update high light cube, returns coord of high light, return null if no mouse overs
-InputController.prototype.updateHighlight = function(coord) {
-    if (coord == null) {
-        return;
-    }
-
-    if (this.cube == null) {
-        geometry = new THREE.BoxGeometry(50, 50, 50, 2, 2, 2);
-        material = new THREE.MeshBasicMaterial();
-        var object = new THREE.Mesh(geometry, material);
-        var edges = new THREE.EdgesHelper(object, 0xEE0000);
-        this.cube = new THREE.Object3D();
-        this.cube.add(edges);
-        this.getGame().addObject3d(this.cube);
-    }
-
-    this.cube.visible = true;
-
-    var gridSize = this.gridController.gridSize;
-    this.cube.position.x = coord.x * gridSize;
-    this.cube.position.y = coord.y * gridSize;
-    this.cube.position.z = coord.z * gridSize;
-
-    this.cube.scale.copy(this.scale);
 };
 
 InputController.prototype.getCoord = function() {

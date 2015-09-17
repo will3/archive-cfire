@@ -22,7 +22,10 @@ ScriptManager.prototype.tick = function() {
             component.start();
             component.started = true;
         }
+    }
 
+    for (var id in this.componentMap) {
+        var component = this.componentMap[id];
         component.tick();
     };
 };

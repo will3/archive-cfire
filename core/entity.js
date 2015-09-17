@@ -3,6 +3,7 @@ var _ = require('lodash');
 
 var TransformComponent = require('./components/transformcomponent');
 var getGame = require('./macros/getgame');
+var types = require('./macros/types');
 
 var Entity = function() {
     this.id = uuid();
@@ -34,9 +35,22 @@ Entity.prototype = {
     },
 
     getComponent: function(type) {
-        return _.find(this.getComponents(), function(component) {
-            return component instanceof type;
-        });
+        if (_.isFunction(type)) {
+            return _.find(this.getComponents(), function(component) {
+                return component instanceof type;
+            });
+        }
+
+        if (_.isString(type)) {
+            var constructor = types[type];
+            if (constructor != null) {
+                return _.find(this.getComponents(), function(component) {
+                    return component instanceof constructor;
+                });
+            }
+        }
+
+        return null;
     },
 
     getComponents: function() {

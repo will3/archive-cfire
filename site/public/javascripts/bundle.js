@@ -14,6 +14,8 @@ var GridController = require('./components/gridcontroller');
 var CameraController = require('./components/cameracontroller');
 var InputController = require('./components/inputcontroller');
 var ChunkController = require('./components/chunkcontroller');
+var PointerController = require('./components/pointercontroller');
+
 require('spectrum-colorpicker')($);
 
 var defaultColor = 'rgb(0, 188, 212)';
@@ -70,6 +72,7 @@ window.onload = function() {
     addChunk(game);
     addInput(game);
     addLights(game);
+    addPointer(game);
 
     var inputController = game.getEntityByName('input').getComponent(InputController);
 
@@ -111,6 +114,16 @@ var addInput = function(game) {
     entity.addComponent(InputComponent);
 };
 
+var addPointer = function(game) {
+    var entity = new Entity();
+    entity.name = 'pointer';
+
+    game.addEntity(entity);
+
+    entity.addComponent(RenderComponent);
+    entity.addComponent(PointerController);
+};
+
 var addLights = function(game) {
     var entity = new Entity();
     entity.name = 'lights';
@@ -124,8 +137,8 @@ var addLights = function(game) {
     var directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
     directionalLight.position.set(0.2, 0.5, 0.4);
     directional.light = directionalLight;
-}
-},{"../core/components/collisionbody":13,"../core/components/inputcomponent":14,"../core/components/lightcomponent":15,"../core/components/rendercomponent":16,"../core/entity":18,"../core/game":20,"../core/rungame":23,"./components/cameracontroller":2,"./components/chunkcontroller":3,"./components/gridcontroller":5,"./components/inputcontroller":6,"./keymap":9,"jquery":35,"spectrum-colorpicker":38,"three":39}],2:[function(require,module,exports){
+};
+},{"../core/components/collisionbody":15,"../core/components/inputcomponent":16,"../core/components/lightcomponent":17,"../core/components/rendercomponent":18,"../core/entity":20,"../core/game":22,"../core/rungame":26,"./components/cameracontroller":2,"./components/chunkcontroller":3,"./components/gridcontroller":5,"./components/inputcontroller":6,"./components/pointercontroller":7,"./keymap":10,"jquery":38,"spectrum-colorpicker":41,"three":42}],2:[function(require,module,exports){
 var THREE = require('three');
 var Component = require('../../core/component');
 
@@ -158,7 +171,7 @@ CameraController.prototype.rotateCamera = function(amount) {
 };
 
 module.exports = CameraController;
-},{"../../core/component":12,"three":39}],3:[function(require,module,exports){
+},{"../../core/component":13,"three":42}],3:[function(require,module,exports){
 var assert = require('assert-plus');
 var THREE = require('three');
 
@@ -220,7 +233,7 @@ ChunkController.prototype.updateObjects = function() {
 };
 
 module.exports = ChunkController;
-},{"../../core/block/chunk":10,"../../core/block/mesh":11,"../../core/component":12,"../../core/components/collisionbody":13,"../../core/components/rendercomponent":16,"assert-plus":33,"three":39}],4:[function(require,module,exports){
+},{"../../core/block/chunk":11,"../../core/block/mesh":12,"../../core/component":13,"../../core/components/collisionbody":15,"../../core/components/rendercomponent":18,"assert-plus":36,"three":42}],4:[function(require,module,exports){
 var extend = require('extend');
 
 var AddBlock = function(params) {
@@ -246,7 +259,7 @@ AddBlock.prototype = {
 };
 
 module.exports = AddBlock;
-},{"extend":34}],5:[function(require,module,exports){
+},{"extend":37}],5:[function(require,module,exports){
 var THREE = require('three');
 var _ = require('lodash');
 var assert = require('assert-plus');
@@ -302,7 +315,7 @@ GridController.prototype.getY = function() {
 };
 
 module.exports = GridController;
-},{"../../core/component":12,"../../core/components/collisionbody":13,"../../core/components/rendercomponent":16,"./utils/getgrid":7,"./utils/plane":8,"assert-plus":33,"lodash":36,"three":39}],6:[function(require,module,exports){
+},{"../../core/component":13,"../../core/components/collisionbody":15,"../../core/components/rendercomponent":18,"./utils/getgrid":8,"./utils/plane":9,"assert-plus":36,"lodash":39,"three":42}],6:[function(require,module,exports){
 var THREE = require('three');
 var assert = require('assert-plus');
 var _ = require('lodash');
@@ -313,32 +326,32 @@ var InputComponent = require('../../core/components/inputcomponent');
 var Grid = require('./gridcontroller');
 var ChunkController = require('./chunkcontroller');
 var CameraController = require('./cameracontroller');
+var PointerController = require('./pointercontroller');
+
 var AddBlock = require('./commands/addblock');
 
 var InputController = function() {
     Component.call(this);
 
-    this.cube = null;
-
+    //entity and components
     this.grid = null;
     this.chunk = null;
     this.gridController = null;
     this.chunkController = null;
     this.cameraController = null;
+    this.pointerController = null;
 
+    //configurations
     this.clickThreshold = 200;
     this.lastMousedownTime = null;
     this.xSpeed = 0.004;
     this.ySpeed = 0.004;
 
+    //state
     this.isRemove = false;
-
-    this.input = null;
 
     this.axis = [];
     this.inputText = '';
-
-    this.scale = new THREE.Vector3(1, 1, 1);
 
     this.lastX = null;
     this.lastY = null;
@@ -361,14 +374,16 @@ InputController.prototype.start = function() {
     this.input = this.getGame().input;
     this.cameraController = this.getComponent(CameraController);
     this.inputComponent = this.getComponent(InputComponent);
+    this.pointerController = this.getEntityByName('pointer').getComponent(PointerController);
 
     assert.object(this.grid, 'grid');
     assert.object(this.chunkController, 'chunkController');
     assert.object(this.input, 'input');
     assert.object(this.inputComponent, 'inputComponent');
+    assert.object(this.pointerController, 'pointerController');
 
-    this.inputComponent.keydown('up', this.upPressed.bind(this));
-    this.inputComponent.keydown('down', this.downPressed.bind(this));
+    this.inputComponent.keydown('up', this.moveGridUp.bind(this));
+    this.inputComponent.keydown('down', this.moveGridDown.bind(this));
     this.inputComponent.keydown('remove', this.removePressed.bind(this));
     this.inputComponent.keyup('remove', this.removeReleased.bind(this));
     this.inputComponent.keydown('grid', this.gridPressed.bind(this));
@@ -387,13 +402,13 @@ InputController.prototype.start = function() {
     this.inputComponent.mousemove(this.onMousemove.bind(this));
 };
 
-InputController.prototype.upPressed = function() {
+InputController.prototype.moveGridUp = function() {
     this.gridController.gridY += 1;
     this.gridController.updateCollisionBody();
     this.gridController.updateGrid(this.chunkController.chunk);
 };
 
-InputController.prototype.downPressed = function() {
+InputController.prototype.moveGridDown = function() {
     this.gridController.gridY -= 1;
     this.gridController.updateCollisionBody();
     this.gridController.updateGrid(this.chunkController.chunk);
@@ -431,13 +446,13 @@ InputController.prototype.enterInput = function() {
 
 InputController.prototype.processAxis = function() {
     if (_.includes(this.axis, 'x')) {
-        this.scale.x = this.getInputNum(1.0);
+        this.pointerController.transform.scale.x = this.getInputNum(1.0);
     }
     if (_.includes(this.axis, 'y')) {
-        this.scale.y = this.getInputNum(1.0);
+        this.pointerController.transform.scale.y = this.getInputNum(1.0);
     }
     if (_.includes(this.axis, 'z')) {
-        this.scale.z = this.getInputNum(1.0);
+        this.pointerController.transform.scale.z = this.getInputNum(1.0);
     }
 };
 
@@ -457,7 +472,13 @@ InputController.prototype.getInputNum = function(defaultValue) {
 
 InputController.prototype.tick = function() {
     var coord = this.getCoord();
-    this.updateHighlight(coord);
+
+    if (coord == null) {
+        this.pointerController.setVisible(false);
+    } else {
+        this.pointerController.setVisible(true);
+        this.pointerController.setCoord(coord);
+    }
 };
 
 InputController.prototype.onMousedown = function() {
@@ -494,20 +515,24 @@ InputController.prototype.onMouseClick = function() {
         var command = new AddBlock({
             chunkController: this.chunkController,
             coord: coord,
-            block: {
-                scale: {
-                    x: this.scale.x,
-                    y: this.scale.y,
-                    z: this.scale.z
-                },
-                color: this.color
-            }
+            block: this.getBlock()
         });
 
         this.runCommand(command);
 
         this.gridController.updateGrid(this.chunkController.chunk);
     }
+};
+
+InputController.prototype.getBlock = function() {
+    return {
+        scale: {
+            x: this.pointerController.transform.scale.x,
+            y: this.pointerController.transform.scale.y,
+            z: this.pointerController.transform.scale.z,
+        },
+        color: this.color
+    };
 };
 
 InputController.prototype.onMousemove = function(e) {
@@ -557,32 +582,6 @@ InputController.prototype.redo = function() {
     lastCommand.run();
     _.pull(this.redoCommands, lastCommand);
     this.commands.push(lastCommand);
-};
-
-//update high light cube, returns coord of high light, return null if no mouse overs
-InputController.prototype.updateHighlight = function(coord) {
-    if (coord == null) {
-        return;
-    }
-
-    if (this.cube == null) {
-        geometry = new THREE.BoxGeometry(50, 50, 50, 2, 2, 2);
-        material = new THREE.MeshBasicMaterial();
-        var object = new THREE.Mesh(geometry, material);
-        var edges = new THREE.EdgesHelper(object, 0xEE0000);
-        this.cube = new THREE.Object3D();
-        this.cube.add(edges);
-        this.getGame().addObject3d(this.cube);
-    }
-
-    this.cube.visible = true;
-
-    var gridSize = this.gridController.gridSize;
-    this.cube.position.x = coord.x * gridSize;
-    this.cube.position.y = coord.y * gridSize;
-    this.cube.position.z = coord.z * gridSize;
-
-    this.cube.scale.copy(this.scale);
 };
 
 InputController.prototype.getCoord = function() {
@@ -662,7 +661,61 @@ InputController.prototype.getChunkCoord = function() {
 };
 
 module.exports = InputController;
-},{"../../core/component":12,"../../core/components/inputcomponent":14,"./cameracontroller":2,"./chunkcontroller":3,"./commands/addblock":4,"./gridcontroller":5,"assert-plus":33,"lodash":36,"three":39}],7:[function(require,module,exports){
+},{"../../core/component":13,"../../core/components/inputcomponent":16,"./cameracontroller":2,"./chunkcontroller":3,"./commands/addblock":4,"./gridcontroller":5,"./pointercontroller":7,"assert-plus":36,"lodash":39,"three":42}],7:[function(require,module,exports){
+var Component = require('../../core/component');
+var RenderComponent = require('../../core/components/RenderComponent');
+var assert = require('assert-plus');
+var THREE = require('three');
+
+var PointerController = function() {
+    Component.call(this);
+
+    this.renderComponent = null;
+    this.gridSize = 50;
+};
+
+PointerController.prototype = Object.create(Component.prototype);
+PointerController.prototype.constructor = PointerController;
+
+PointerController.prototype.start = function() {
+    this.renderComponent = this.getComponent('RenderComponent');
+    assert.object(this.renderComponent, 'renderComponent');
+
+    this.cube = this.makeCube();
+    this.renderComponent.object = this.cube;
+};
+
+PointerController.prototype.setGridSize = function(gridSize) {
+    this.gridSize = gridSize;
+};
+
+PointerController.prototype.setCoord = function(coord) {
+    this.transform.position.x = coord.x * this.gridSize;
+    this.transform.position.y = coord.y * this.gridSize;
+    this.transform.position.z = coord.z * this.gridSize;
+};
+
+PointerController.prototype.setScale = function(scale) {
+    this.transform.scale.copy(scale);
+};
+
+PointerController.prototype.setVisible = function(visible) {
+    this.renderComponent.visible = visible;
+};
+
+PointerController.prototype.makeCube = function() {
+    geometry = new THREE.BoxGeometry(50, 50, 50, 2, 2, 2);
+    material = new THREE.MeshBasicMaterial();
+    var object = new THREE.Mesh(geometry, material);
+    var edges = new THREE.EdgesHelper(object, 0xEE0000);
+    var cube = new THREE.Object3D();
+    cube.add(edges);
+
+    return cube;
+};
+
+module.exports = PointerController;
+},{"../../core/component":13,"../../core/components/RenderComponent":14,"assert-plus":36,"three":42}],8:[function(require,module,exports){
 var _ = require('lodash');
 var THREE = require('three');
 
@@ -697,7 +750,7 @@ var getGrid = function(chunk, gridY, gridSize) {
 }
 
 module.exports = getGrid;
-},{"lodash":36,"three":39}],8:[function(require,module,exports){
+},{"lodash":39,"three":42}],9:[function(require,module,exports){
 var THREE = require('three');
 
 module.exports = function(size, y){
@@ -717,7 +770,7 @@ module.exports = function(size, y){
 
     return new THREE.Mesh(geometry, material);
 };
-},{"three":39}],9:[function(require,module,exports){
+},{"three":42}],10:[function(require,module,exports){
 module.exports = {
     'up': 'up',
     'down': 'down',
@@ -744,7 +797,7 @@ module.exports = {
     'undo': ['ctrl+z', 'command+z'],
     'redo': ['ctrl+shift+z', 'command+shift+z']
 }
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 //params
 //data  if not empty, populates map with data, defaults to null
 var Chunk = function(params) {
@@ -819,7 +872,7 @@ Chunk.prototype = {
 }
 
 module.exports = Chunk;
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var THREE = require('three');
 var _ = require('lodash');
 
@@ -1030,7 +1083,7 @@ module.exports = function(chunk, params) {
 
     return object;
 };
-},{"lodash":36,"three":39}],12:[function(require,module,exports){
+},{"lodash":39,"three":42}],13:[function(require,module,exports){
 var uuid = require('uuid-v4');
 var getGame = require('../core/macros/getgame');
 
@@ -1089,7 +1142,30 @@ Component.prototype = {
 };
 
 module.exports = Component;
-},{"../core/macros/getgame":22,"uuid-v4":40}],13:[function(require,module,exports){
+},{"../core/macros/getgame":24,"uuid-v4":43}],14:[function(require,module,exports){
+var Component = require('../component');
+var THREE = require('three');
+
+var RenderComponent = function() {
+    Component.call(this);
+
+    //sets render object
+    //defaults to empty object 3d
+    this.object = null;
+
+    //wether to perform a redraw in the next frame
+    //used by renderer
+    this.needsRedraw = false;
+
+    //visible
+    this.visible = true;
+};
+
+RenderComponent.prototype = Object.create(Component.prototype);
+RenderComponent.prototype.constructor = RenderComponent;
+
+module.exports = RenderComponent;
+},{"../component":13,"three":42}],15:[function(require,module,exports){
 var Component = require('../component');
 
 var CollisionBody = function() {
@@ -1103,7 +1179,7 @@ CollisionBody.prototype = Object.create(Component.prototype);
 CollisionBody.prototype.constructor = CollisionBody;
 
 module.exports = CollisionBody;
-},{"../component":12}],14:[function(require,module,exports){
+},{"../component":13}],16:[function(require,module,exports){
 var _ = require('lodash');
 
 var Component = require('../component');
@@ -1165,7 +1241,7 @@ InputComponent.prototype.mouseup = function(func) {
 };
 
 module.exports = InputComponent;
-},{"../component":12,"lodash":36}],15:[function(require,module,exports){
+},{"../component":13,"lodash":39}],17:[function(require,module,exports){
 var Component = require('../component');
 
 var LightComponent = function() {
@@ -1179,30 +1255,9 @@ LightComponent.prototype = Object.create(Component.prototype);
 LightComponent.prototype.constructor = LightComponent;
 
 module.exports = LightComponent;
-},{"../component":12}],16:[function(require,module,exports){
-var Component = require('../component');
-var THREE = require('three');
-
-var RenderComponent = function() {
-    Component.call(this);
-
-    //sets render object
-    //defaults to empty object 3d
-    this.object = null;
-
-    //wether to perform a redraw in the next frame
-    //used by renderer
-    this.needsRedraw = false;
-
-    //visible
-    this.visible = true;
-};
-
-RenderComponent.prototype = Object.create(Component.prototype);
-RenderComponent.prototype.constructor = RenderComponent;
-
-module.exports = RenderComponent;
-},{"../component":12,"three":39}],17:[function(require,module,exports){
+},{"../component":13}],18:[function(require,module,exports){
+arguments[4][14][0].apply(exports,arguments)
+},{"../component":13,"dup":14,"three":42}],19:[function(require,module,exports){
 var Component = require('../component');
 var THREE = require('three');
 
@@ -1218,12 +1273,13 @@ TransformComponent.prototype = Object.create(Component.prototype);
 TransformComponent.prototype.constructor = TransformComponent;
 
 module.exports = TransformComponent;
-},{"../component":12,"three":39}],18:[function(require,module,exports){
+},{"../component":13,"three":42}],20:[function(require,module,exports){
 var uuid = require('uuid-v4');
 var _ = require('lodash');
 
 var TransformComponent = require('./components/transformcomponent');
 var getGame = require('./macros/getgame');
+var types = require('./macros/types');
 
 var Entity = function() {
     this.id = uuid();
@@ -1255,9 +1311,22 @@ Entity.prototype = {
     },
 
     getComponent: function(type) {
-        return _.find(this.getComponents(), function(component) {
-            return component instanceof type;
-        });
+        if (_.isFunction(type)) {
+            return _.find(this.getComponents(), function(component) {
+                return component instanceof type;
+            });
+        }
+
+        if (_.isString(type)) {
+            var constructor = types[type];
+            if (constructor != null) {
+                return _.find(this.getComponents(), function(component) {
+                    return component instanceof constructor;
+                });
+            }
+        }
+
+        return null;
     },
 
     getComponents: function() {
@@ -1270,7 +1339,7 @@ Entity.prototype = {
 }
 
 module.exports = Entity;
-},{"./components/transformcomponent":17,"./macros/getgame":22,"lodash":36,"uuid-v4":40}],19:[function(require,module,exports){
+},{"./components/transformcomponent":19,"./macros/getgame":24,"./macros/types":25,"lodash":39,"uuid-v4":43}],21:[function(require,module,exports){
 var _ = require('lodash');
 
 var EntityManager = function() {
@@ -1421,7 +1490,7 @@ EntityManager.prototype = {
 };
 
 module.exports = EntityManager;
-},{"lodash":36}],20:[function(require,module,exports){
+},{"lodash":39}],22:[function(require,module,exports){
 var _ = require('lodash');
 var $ = require('jquery');
 
@@ -1529,7 +1598,7 @@ Game.prototype = {
 };
 
 module.exports = Game;
-},{"./entitymanager":19,"./inputstate":21,"./macros/getgame":22,"./systems":25,"./systems/collision":26,"./systems/console":27,"./systems/inputmanager":28,"./systems/renderer":30,"jquery":35,"lodash":36}],21:[function(require,module,exports){
+},{"./entitymanager":21,"./inputstate":23,"./macros/getgame":24,"./systems":28,"./systems/collision":29,"./systems/console":30,"./systems/inputmanager":31,"./systems/renderer":33,"jquery":38,"lodash":39}],23:[function(require,module,exports){
 var _ = require('lodash');
 
 var InputState = function() {
@@ -1574,7 +1643,7 @@ InputState.prototype = {
 }
 
 module.exports = InputState;
-},{"lodash":36}],22:[function(require,module,exports){
+},{"lodash":39}],24:[function(require,module,exports){
 var game = null;
 
 module.exports = function() {
@@ -1584,7 +1653,17 @@ module.exports = function() {
 module.exports.register = function(value) {
     game = value;
 }
-},{}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
+var types = {
+    'CollisionBody': require('../components/collisionbody'),
+    'InputComponent': require('../components/inputcomponent'),
+    'LightComponent': require('../components/lightcomponent'),
+    'RenderComponent': require('../components/rendercomponent'),
+    'TransformComponent': require('../components/transformcomponent')
+};
+
+module.exports = types;
+},{"../components/collisionbody":15,"../components/inputcomponent":16,"../components/lightcomponent":17,"../components/rendercomponent":18,"../components/transformcomponent":19}],26:[function(require,module,exports){
 module.exports = function(game, params) {
     params = params || {};
     var tickRate = params.tickRate || 60.0;
@@ -1599,7 +1678,7 @@ module.exports = function(game, params) {
 
     interval();
 };
-},{}],24:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var getGame = require('./macros/getgame');
 
 var System = function(entityManager) {
@@ -1658,7 +1737,7 @@ System.prototype = {
 };
 
 module.exports = System;
-},{"./macros/getgame":22}],25:[function(require,module,exports){
+},{"./macros/getgame":24}],28:[function(require,module,exports){
 var $ = require('jquery');
 
 var Renderer = require('./systems/renderer');
@@ -1681,7 +1760,7 @@ var lighting = new Lighting(renderer);
 var console = new Console();
 
 module.exports = [renderer, inputManager, scriptManager, collision, lighting, console];
-},{"./systems/collision":26,"./systems/console":27,"./systems/inputmanager":28,"./systems/lighting":29,"./systems/renderer":30,"./systems/scriptmanager":31,"jquery":35}],26:[function(require,module,exports){
+},{"./systems/collision":29,"./systems/console":30,"./systems/inputmanager":31,"./systems/lighting":32,"./systems/renderer":33,"./systems/scriptmanager":34,"jquery":38}],29:[function(require,module,exports){
 var _ = require('lodash');
 
 var System = require('../system');
@@ -1731,7 +1810,7 @@ Collision.prototype.tick = function() {
 };
 
 module.exports = Collision;
-},{"../components/collisionbody":13,"../system":24,"../utils/getmouseraycaster":32,"lodash":36}],27:[function(require,module,exports){
+},{"../components/collisionbody":15,"../system":27,"../utils/getmouseraycaster":35,"lodash":39}],30:[function(require,module,exports){
 var _ = require('lodash');
 var $ = require('jquery');
 
@@ -1788,7 +1867,7 @@ Console.prototype.updateLayout = function() {
 };
 
 module.exports = Console;
-},{"../system":24,"jquery":35,"lodash":36}],28:[function(require,module,exports){
+},{"../system":27,"jquery":38,"lodash":39}],31:[function(require,module,exports){
 var $ = require('jquery');
 var _ = require('lodash');
 try {
@@ -1924,7 +2003,7 @@ InputManager.prototype.afterTick = function() {
 };
 
 module.exports = InputManager;
-},{"../components/inputcomponent":14,"../inputstate":21,"../system":24,"jquery":35,"lodash":36,"mousetrap":37}],29:[function(require,module,exports){
+},{"../components/inputcomponent":16,"../inputstate":23,"../system":27,"jquery":38,"lodash":39,"mousetrap":40}],32:[function(require,module,exports){
 var System = require('../system');
 var LightComponent = require('../components/lightcomponent');
 
@@ -1967,7 +2046,7 @@ Lighting.prototype.tick = function() {
 };
 
 module.exports = Lighting;
-},{"../components/lightcomponent":15,"../system":24}],30:[function(require,module,exports){
+},{"../components/lightcomponent":17,"../system":27}],33:[function(require,module,exports){
 var RenderComponent = require('../components/rendercomponent');
 var CollisionBody = require('../components/collisionbody');
 var THREE = require('three');
@@ -2043,7 +2122,7 @@ Renderer.prototype.tick = function() {
 };
 
 module.exports = Renderer;
-},{"../components/collisionbody":13,"../components/rendercomponent":16,"../system":24,"three":39}],31:[function(require,module,exports){
+},{"../components/collisionbody":15,"../components/rendercomponent":18,"../system":27,"three":42}],34:[function(require,module,exports){
 var System = require('../system');
 
 //script manager manages custom components
@@ -2068,7 +2147,10 @@ ScriptManager.prototype.tick = function() {
             component.start();
             component.started = true;
         }
+    }
 
+    for (var id in this.componentMap) {
+        var component = this.componentMap[id];
         component.tick();
     };
 };
@@ -2081,7 +2163,7 @@ ScriptManager.prototype.afterTick = function() {
 };
 
 module.exports = ScriptManager;
-},{"../system":24}],32:[function(require,module,exports){
+},{"../system":27}],35:[function(require,module,exports){
 var THREE = require('three');
 var getGame = require('../macros/getgame');
 
@@ -2100,7 +2182,7 @@ module.exports = function() {
 
     return raycaster;
 }
-},{"../macros/getgame":22,"three":39}],33:[function(require,module,exports){
+},{"../macros/getgame":24,"three":42}],36:[function(require,module,exports){
 (function (process,Buffer){
 // Copyright (c) 2012, Mark Cavage. All rights reserved.
 
@@ -2349,7 +2431,7 @@ Object.keys(assert).forEach(function (k) {
 });
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":50,"assert":41,"buffer":43,"stream":64,"util":67}],34:[function(require,module,exports){
+},{"_process":53,"assert":44,"buffer":46,"stream":67,"util":70}],37:[function(require,module,exports){
 'use strict';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -2437,7 +2519,7 @@ module.exports = function extend() {
 };
 
 
-},{}],35:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -11649,7 +11731,7 @@ return jQuery;
 
 }));
 
-},{}],36:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -24004,7 +24086,7 @@ return jQuery;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],37:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 /*global define:false */
 /**
  * Copyright 2015 Craig Campbell
@@ -25027,7 +25109,7 @@ return jQuery;
     }
 }) (window, document);
 
-},{}],38:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 // Spectrum Colorpicker v1.7.1
 // https://github.com/bgrins/spectrum
 // Author: Brian Grinstead
@@ -27346,7 +27428,7 @@ return jQuery;
 
 });
 
-},{}],39:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 var self = self || {};// File:src/Three.js
 
 /**
@@ -62494,7 +62576,7 @@ if (typeof exports !== 'undefined') {
   this['THREE'] = THREE;
 }
 
-},{}],40:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 
 exports = module.exports = function() {
 	var ret = '', value;
@@ -62524,7 +62606,7 @@ exports.random = function() {
 };
 
 
-},{}],41:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
 // THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
@@ -62885,9 +62967,9 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":67}],42:[function(require,module,exports){
+},{"util/":70}],45:[function(require,module,exports){
 
-},{}],43:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -64422,7 +64504,7 @@ function blitBuffer (src, dst, offset, length) {
   return i
 }
 
-},{"base64-js":44,"ieee754":45,"is-array":46}],44:[function(require,module,exports){
+},{"base64-js":47,"ieee754":48,"is-array":49}],47:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -64548,7 +64630,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],45:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -64634,7 +64716,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],46:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 
 /**
  * isArray
@@ -64669,7 +64751,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],47:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -64972,7 +65054,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],48:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -64997,12 +65079,12 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],49:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],50:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -65094,10 +65176,10 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],51:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":52}],52:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":55}],55:[function(require,module,exports){
 // a duplex stream is just a stream that is both readable and writable.
 // Since JS doesn't have multiple prototypal inheritance, this class
 // prototypally inherits from Readable, and then parasitically from
@@ -65181,7 +65263,7 @@ function forEach (xs, f) {
   }
 }
 
-},{"./_stream_readable":54,"./_stream_writable":56,"core-util-is":57,"inherits":48,"process-nextick-args":58}],53:[function(require,module,exports){
+},{"./_stream_readable":57,"./_stream_writable":59,"core-util-is":60,"inherits":51,"process-nextick-args":61}],56:[function(require,module,exports){
 // a passthrough stream.
 // basically just the most minimal sort of Transform stream.
 // Every written chunk gets output as-is.
@@ -65210,7 +65292,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":55,"core-util-is":57,"inherits":48}],54:[function(require,module,exports){
+},{"./_stream_transform":58,"core-util-is":60,"inherits":51}],57:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -66173,7 +66255,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":52,"_process":50,"buffer":43,"core-util-is":57,"events":47,"inherits":48,"isarray":49,"process-nextick-args":58,"string_decoder/":65,"util":42}],55:[function(require,module,exports){
+},{"./_stream_duplex":55,"_process":53,"buffer":46,"core-util-is":60,"events":50,"inherits":51,"isarray":52,"process-nextick-args":61,"string_decoder/":68,"util":45}],58:[function(require,module,exports){
 // a transform stream is a readable/writable stream where you do
 // something with the data.  Sometimes it's called a "filter",
 // but that's not a great name for it, since that implies a thing where
@@ -66372,7 +66454,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":52,"core-util-is":57,"inherits":48}],56:[function(require,module,exports){
+},{"./_stream_duplex":55,"core-util-is":60,"inherits":51}],59:[function(require,module,exports){
 // A bit simpler than readable streams.
 // Implement an async ._write(chunk, cb), and it'll handle all
 // the drain event emission and buffering.
@@ -66894,7 +66976,7 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-},{"./_stream_duplex":52,"buffer":43,"core-util-is":57,"events":47,"inherits":48,"process-nextick-args":58,"util-deprecate":59}],57:[function(require,module,exports){
+},{"./_stream_duplex":55,"buffer":46,"core-util-is":60,"events":50,"inherits":51,"process-nextick-args":61,"util-deprecate":62}],60:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -67004,7 +67086,7 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":43}],58:[function(require,module,exports){
+},{"buffer":46}],61:[function(require,module,exports){
 (function (process){
 'use strict';
 module.exports = nextTick;
@@ -67021,7 +67103,7 @@ function nextTick(fn) {
 }
 
 }).call(this,require('_process'))
-},{"_process":50}],59:[function(require,module,exports){
+},{"_process":53}],62:[function(require,module,exports){
 (function (global){
 
 /**
@@ -67087,10 +67169,10 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],60:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":53}],61:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":56}],64:[function(require,module,exports){
 var Stream = (function (){
   try {
     return require('st' + 'ream'); // hack to fix a circular dependency issue when used with browserify
@@ -67104,13 +67186,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":52,"./lib/_stream_passthrough.js":53,"./lib/_stream_readable.js":54,"./lib/_stream_transform.js":55,"./lib/_stream_writable.js":56}],62:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":55,"./lib/_stream_passthrough.js":56,"./lib/_stream_readable.js":57,"./lib/_stream_transform.js":58,"./lib/_stream_writable.js":59}],65:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":55}],63:[function(require,module,exports){
+},{"./lib/_stream_transform.js":58}],66:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":56}],64:[function(require,module,exports){
+},{"./lib/_stream_writable.js":59}],67:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -67239,7 +67321,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":47,"inherits":48,"readable-stream/duplex.js":51,"readable-stream/passthrough.js":60,"readable-stream/readable.js":61,"readable-stream/transform.js":62,"readable-stream/writable.js":63}],65:[function(require,module,exports){
+},{"events":50,"inherits":51,"readable-stream/duplex.js":54,"readable-stream/passthrough.js":63,"readable-stream/readable.js":64,"readable-stream/transform.js":65,"readable-stream/writable.js":66}],68:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -67462,14 +67544,14 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":43}],66:[function(require,module,exports){
+},{"buffer":46}],69:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],67:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -68059,4 +68141,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":66,"_process":50,"inherits":48}]},{},[1]);
+},{"./support/isBuffer":69,"_process":53,"inherits":51}]},{},[1]);
