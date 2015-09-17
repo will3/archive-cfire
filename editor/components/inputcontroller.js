@@ -15,7 +15,6 @@ var AddBlock = require('./commands/addblock');
 var InputController = function() {
     Component.call(this);
 
-    //entity and components
     this.grid = null;
     this.chunk = null;
     this.gridController = null;
@@ -23,13 +22,11 @@ var InputController = function() {
     this.cameraController = null;
     this.pointerController = null;
 
-    //configurations
     this.clickThreshold = 200;
     this.lastMousedownTime = null;
     this.xSpeed = 0.004;
     this.ySpeed = 0.004;
 
-    //state
     this.isRemove = false;
 
     this.axis = [];
@@ -78,6 +75,7 @@ InputController.prototype.start = function() {
     this.inputComponent.keydown('enter', this.enterInput.bind(this));
     this.inputComponent.keydown('undo', this.undo.bind(this));
     this.inputComponent.keydown('redo', this.redo.bind(this));
+    this.inputComponent.keydown('save', this.save.bind(this));
 
     this.inputComponent.mousedown(this.onMousedown.bind(this));
     this.inputComponent.mouseup(this.onMouseup.bind(this));
@@ -264,6 +262,35 @@ InputController.prototype.redo = function() {
     lastCommand.run();
     _.pull(this.redoCommands, lastCommand);
     this.commands.push(lastCommand);
+};
+
+InputController.prototype.save = function() {
+    var fileName = prompt("choose file name:", "block.cf");
+
+    if (fileName != null) {
+        var json = this.chunkController.serialize();
+        var blob = new Blob([JSON.stringify(json)], {
+            type: "text/plain;charset=utf-8"
+        });
+        require('filesaver.js').saveAs(blob, fileName);
+    }
+};
+
+InputController.prototype.open = function(file) {
+    var reader = new FileReader();
+    var self = this;
+    reader.addEventListener("loadend", function() {
+        // reader.result contains the contents of blob as a typed array
+        var json = JSON.parse(reader.result);
+        self.chunkController.load(json);
+    });
+    reader.readAsText(file);
+};
+
+InputController.prototype.reset = function() {
+    this.chunkController.reset();
+    this.commands = [];
+    this.redoCommands = [];
 };
 
 InputController.prototype.getCoord = function() {

@@ -1,3 +1,4 @@
+var $ = require('jquery');
 var THREE = require('three');
 
 var runGame = require('../core/rungame');
@@ -14,22 +15,10 @@ var InputController = require('./components/inputcontroller');
 var ChunkController = require('./components/chunkcontroller');
 var PointerController = require('./components/pointercontroller');
 var addColorPicker = require('./addcolorpicker');
+var filebutton = require('file-button');
 
 var defaultColor = 'rgb(189, 189, 189)';
 window.onload = function() {
-    addColorPicker({
-        color: defaultColor,
-        show: function(color) {
-            inputController.hasFocus = false;
-        },
-        hide: function(color) {
-            inputController.hasFocus = true;
-        },
-        change: function(color) {
-            inputController.color = new THREE.Color(color.toRgbString()).getHex()
-        }
-    });
-
     var Game = require('../core/game');
 
     var game = new Game({
@@ -45,6 +34,37 @@ window.onload = function() {
     addPointer(game);
 
     var inputController = game.getEntityByName('input').getComponent(InputController);
+
+    addColorPicker({
+        color: defaultColor,
+        show: function(color) {
+            inputController.hasFocus = false;
+        },
+        hide: function(color) {
+            inputController.hasFocus = true;
+        },
+        change: function(color) {
+            inputController.color = new THREE.Color(color.toRgbString()).getHex()
+        }
+    });
+
+    $('#save-button').click(function() {
+        inputController.save();
+    });
+
+    $('#reset-button').click(function() {
+        inputController.reset();
+    });
+
+    filebutton
+        .create({
+            multiple: false,
+            accept: '.cf'
+        })
+        .on('fileinput', function(fileinput) {
+            inputController.open(fileinput.files[0]);
+        })
+        .mount(document.getElementById('open-button'));
 };
 
 var addGrid = function(game) {

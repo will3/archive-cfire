@@ -5,6 +5,8 @@ var Component = require('../../core/component');
 var RenderComponent = require('../../core/components/rendercomponent');
 var CollisionBody = require('../../core/components/collisionbody');
 var mesh = require('../../core/block/mesh');
+var serialize = require('../../core/block/serialize');
+var deserialize = require('../../core/block/deserialize');
 var Chunk = require('../../core/block/chunk');
 
 var ChunkController = function() {
@@ -56,6 +58,20 @@ ChunkController.prototype.updateObjects = function() {
 
     this.renderComponent.object = renderObject;
     this.collisionBody.object = object;
+};
+
+ChunkController.prototype.reset = function() {
+    this.chunk = new Chunk();
+    this.updateObjects();
+};
+
+ChunkController.prototype.serialize = function() {
+    return serialize(this.chunk);
+};
+
+ChunkController.prototype.load = function(json) {
+    this.chunk = deserialize(json);
+    this.updateObjects();
 };
 
 module.exports = ChunkController;

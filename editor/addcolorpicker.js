@@ -5,15 +5,7 @@ require('spectrum-colorpicker')($);
 module.exports = function(params) {
     params = params || {};
 
-    var colorPickerDiv = $("<div id='color-picker-container'>");
-    colorPickerDiv.css('position', 'absolute');
-    colorPickerDiv.css('left', 20 + 'px');
-    colorPickerDiv.css('top', 20 + 'px');
-
-    var colorPicker = $("<input type='text' id='color-picker'/>");
-    colorPickerDiv.append(colorPicker);
-    $('#container').append(colorPickerDiv);
-
+    var colorPicker = $('#color-picker');
     colorPicker.spectrum(extend({
         showPalette: true,
         showSelectionPalette: true,

@@ -20,3 +20,9 @@ body {
     user-select: none;
     cursor: default;
 }
+
+.menu-form {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+}
