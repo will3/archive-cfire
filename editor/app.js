@@ -14,6 +14,7 @@ var CameraController = require('./components/cameracontroller');
 var InputController = require('./components/inputcontroller');
 var ChunkController = require('./components/chunkcontroller');
 var PointerController = require('./components/pointercontroller');
+
 var addColorPicker = require('./addcolorpicker');
 var filebutton = require('file-button');
 
@@ -22,7 +23,14 @@ window.onload = function() {
     var Game = require('../core/game');
 
     var game = new Game({
-        keyMap: require('./keymap')
+        keyMap: require('./keymap'),
+        types: {
+            'GridController': require('./components/gridcontroller'),
+            'CameraController': require('./components/cameracontroller'),
+            'InputController': require('./components/inputcontroller'),
+            'ChunkController': require('./components/chunkcontroller'),
+            'PointerController': require('./components/pointercontroller')
+        }
     });
 
     runGame(game);

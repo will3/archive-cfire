@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var $ = require('jquery');
+var extend = require('extend');
 
 var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
@@ -14,6 +15,7 @@ var Console = require('./systems/console');
 //skipRegisterGame: skip registering for game singleton, setting this true will stop macros will funcitoning, defaults to false
 //systems: systems this game should run, creates default set if left empty
 //keyMap: key map
+//types: type bindings
 var Game = function(params) {
     params = params || {};
 
@@ -36,6 +38,8 @@ var Game = function(params) {
     this.inputManager = this.getSystem(InputManager);
     this.collision = this.getSystem(Collision);
     this.console = this.getSystem(Console);
+
+    this.types = params.types || {};
 };
 
 Game.prototype = {
@@ -69,6 +73,8 @@ Game.prototype = {
         document.oncontextmenu = document.body.oncontextmenu = function() {
             return false;
         }
+
+        extend(require('./macros/types'), this.types);
     },
 
     tick: function(elapsedTime) {
