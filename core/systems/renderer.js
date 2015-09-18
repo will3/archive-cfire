@@ -2,6 +2,9 @@ var RenderComponent = require('../components/rendercomponent');
 var CollisionBody = require('../components/collisionbody');
 var THREE = require('three');
 var System = require('../system');
+var resized = require('../utils/resized');
+
+var $ = require('jquery');
 
 var Renderer = function(container, window) {
     System.call(this);
@@ -11,14 +14,13 @@ var Renderer = function(container, window) {
 
     this.scene = new THREE.Scene();
 
-    this.camera = new THREE.PerspectiveCamera(75, this.window.innerWidth / this.window.innerHeight, 1, 10000);
-    this.camera.rotation.order = 'YXZ';
+    this.camera = this.getCamera();
 
     this.renderer = new THREE.WebGLRenderer({
         antialias: true
     });
 
-    this.renderer.setSize(this.window.innerWidth, this.window.innerHeight);
+    this.updateRendererSize();
 
     this.renderer.setClearColor(0xffffff, 1);
 
@@ -30,10 +32,27 @@ var Renderer = function(container, window) {
 
     //object look up, by component id
     this.objectMap = {};
+
+    var self = this;
+    resized(function() {
+        self.camera = self.getCamera();
+        self.updateRendererSize();
+    });
 };
 
 Renderer.prototype = Object.create(System.prototype);
 Renderer.prototype.constructor = Renderer;
+
+Renderer.prototype.getCamera = function() {
+    var camera = new THREE.PerspectiveCamera(75, this.window.innerWidth / this.window.innerHeight, 1, 10000);
+    camera.rotation.order = 'YXZ';
+
+    return camera;
+};
+
+Renderer.prototype.updateRendererSize = function() {
+    this.renderer.setSize(this.window.innerWidth, this.window.innerHeight);
+};
 
 Renderer.prototype.addObject = function(renderComponent) {
     this.scene.add(renderComponent.object);

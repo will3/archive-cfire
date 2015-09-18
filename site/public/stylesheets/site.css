@@ -5,6 +5,7 @@ body {
 
 body {
     margin: 0px;
+    color: #fff;
 }
 
 #container {
@@ -25,4 +26,8 @@ body {
     position: absolute;
     left: 20px;
     top: 20px;
+}
+
+body {
+    overflow: hidden;
 }

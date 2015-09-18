@@ -60,7 +60,7 @@ ChunkController.prototype.updateObjects = function() {
     };
 
     var edgeObject = new THREE.Line(geometry, new THREE.LineBasicMaterial({
-        color: 0x000000
+        color: 0x000000,
     }), THREE.LinePieces);
 
     var renderObject = new THREE.Object3D();

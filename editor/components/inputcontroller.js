@@ -29,7 +29,6 @@ var InputController = function() {
 
     this.isRemove = false;
 
-    this.axis = [];
     this.inputText = '';
 
     this.lastX = null;
@@ -66,9 +65,6 @@ InputController.prototype.start = function() {
     this.inputComponent.keydown('remove', this.removePressed.bind(this));
     this.inputComponent.keyup('remove', this.removeReleased.bind(this));
     this.inputComponent.keydown('grid', this.gridPressed.bind(this));
-    this.inputComponent.keydown(['x', 'y', 'z'], function(key) {
-        this.setAxis(key);
-    }.bind(this));
     this.inputComponent.keydown(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '-'], function(key) {
         this.appendInput(key);
     }.bind(this));
@@ -106,48 +102,13 @@ InputController.prototype.gridPressed = function() {
     this.gridController.gridHidden = !this.gridController.gridHidden;
 };
 
-InputController.prototype.setAxis = function(axis) {
-    if (!_.includes(this.axis, axis)) {
-        this.axis.push(axis);
-    }
-    this.inputText = '';
-};
-
 InputController.prototype.appendInput = function(key) {
     this.inputText += key;
-    this.processAxis();
 };
 
 InputController.prototype.enterInput = function() {
-    this.processAxis();
     this.inputText = '';
-    this.axis = [];
-};
-
-InputController.prototype.processAxis = function() {
-    if (_.includes(this.axis, 'x')) {
-        this.pointerController.transform.scale.x = this.getInputNum(1.0);
-    }
-    if (_.includes(this.axis, 'y')) {
-        this.pointerController.transform.scale.y = this.getInputNum(1.0);
-    }
-    if (_.includes(this.axis, 'z')) {
-        this.pointerController.transform.scale.z = this.getInputNum(1.0);
-    }
-};
-
-InputController.prototype.getInputNum = function(defaultValue) {
-    defaultValue = defaultValue || 0.0;
-    if (this.inputText == null || this.inputText.length == 0) {
-        return defaultValue;
-    }
-
-    var num = parseFloat(this.inputText);
-    if (num == NaN) {
-        return defaultValue;
-    }
-
-    return num;
+    //process input
 };
 
 InputController.prototype.tick = function() {
@@ -276,7 +237,7 @@ InputController.prototype.save = function() {
     }
 };
 
-InputController.prototype.open = function(file) {
+InputController.prototype.openFile = function(file) {
     var reader = new FileReader();
     var self = this;
     reader.addEventListener("loadend", function() {
@@ -291,6 +252,18 @@ InputController.prototype.reset = function() {
     this.chunkController.reset();
     this.commands = [];
     this.redoCommands = [];
+};
+
+InputController.prototype.setBlockX = function(value) {
+    this.pointerController.transform.scale.x = value;
+};
+
+InputController.prototype.setBlockY = function(value) {
+    this.pointerController.transform.scale.y = value;
+};
+
+InputController.prototype.setBlockZ = function(value) {
+    this.pointerController.transform.scale.z = value;
 };
 
 InputController.prototype.getCoord = function() {

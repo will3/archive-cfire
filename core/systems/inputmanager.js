@@ -66,6 +66,8 @@ InputManager.prototype.bindKeyMap = function() {
                             }
                         });
                     }
+
+                    return false;
                 }
             }());
 
@@ -79,6 +81,8 @@ InputManager.prototype.bindKeyMap = function() {
                             }
                         });
                     }
+
+                    return false;
                 }
             }(), 'keyup');
         });

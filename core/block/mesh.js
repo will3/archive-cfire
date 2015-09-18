@@ -165,12 +165,12 @@ module.exports = function(chunk, params) {
 
         var color = block.color || 0x000000
         var materialIndex = _.findIndex(materials, function(material) {
-            return material.color.getHex() == color;
+            return material.emissive.getHex() == color;
         });
 
         if (materialIndex == -1) {
             materials.push(new THREE.MeshLambertMaterial({
-                color: block.color
+                emissive: new THREE.Color(block.color)
             }));
 
             materialIndex = materials.length - 1;

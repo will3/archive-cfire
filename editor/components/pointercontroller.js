@@ -31,10 +31,6 @@ PointerController.prototype.setCoord = function(coord) {
     this.transform.position.z = coord.z * this.gridSize;
 };
 
-PointerController.prototype.setScale = function(scale) {
-    this.transform.scale.copy(scale);
-};
-
 PointerController.prototype.setVisible = function(visible) {
     this.renderComponent.visible = visible;
 };
