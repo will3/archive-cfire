@@ -1,6 +1,7 @@
 var $ = require('jquery');
 var assert = require('assert-plus');
 var filebutton = require('file-button');
+var THREE = require('three');
 
 var addColorPicker = require('./addcolorpicker');
 var palette = require('./palette');

@@ -206,7 +206,7 @@ var addFace = function(side, params) {
 }
 
 var hasGap = function(block) {
-    return block.scale.x < 1 || block.scale.y < 1 || block.scale.z < 1;
+    return block.scale.x != 1 || block.scale.y != 1 || block.scale.z != 1;
 };
 
 var mergeEdges = function(edges) {
@@ -1652,17 +1652,25 @@ CameraController.prototype = Object.create(Component.prototype);
 CameraController.prototype.constructor = CameraController;
 
 CameraController.prototype.rotateCamera = function(amount) {
-    var camera = this.getGame().camera;
-
     this.rotation.y -= amount.x;
     this.rotation.x -= amount.y;
 
-    var position = new THREE.Vector3(0, 0, this.distance).applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(this.rotation));
+    this.updatePosition();
+};
 
-    camera.position.copy(position);
+CameraController.prototype.zoom = function(scale) {
+    this.distance = this.distance * scale;
+    this.updatePosition();
+};
+
+CameraController.prototype.updatePosition = function() {
+    var camera = this.getGame().camera;
 
     camera.rotation.x = this.rotation.x;
     camera.rotation.y = this.rotation.y;
+
+    var position = new THREE.Vector3(0, 0, this.distance).applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(this.rotation));
+    camera.position.copy(position);
 };
 
 module.exports = CameraController;
@@ -1912,6 +1920,8 @@ InputController.prototype.start = function() {
     this.inputComponent.keydown('undo', this.undo.bind(this));
     this.inputComponent.keydown('redo', this.redo.bind(this));
     this.inputComponent.keydown('save', this.save.bind(this));
+    this.inputComponent.keydown('zoomin', this.zoomIn.bind(this));
+    this.inputComponent.keydown('zoomout', this.zoomOut.bind(this));
 
     this.inputComponent.mousedown(this.onMousedown.bind(this));
     this.inputComponent.mouseup(this.onMouseup.bind(this));
@@ -2106,6 +2116,14 @@ InputController.prototype.setBlockZ = function(value) {
     this.pointerController.transform.scale.z = value;
 };
 
+InputController.prototype.zoomIn = function() {
+    this.cameraController.zoom(1 / 1.1);
+};
+
+InputController.prototype.zoomOut = function() {
+    this.cameraController.zoom(1.1);
+};
+
 InputController.prototype.getCoord = function() {
     return this.getChunkCoord() || this.getGridCoord();
 };
@@ -2292,6 +2310,7 @@ module.exports = function(size, y){
 var $ = require('jquery');
 var assert = require('assert-plus');
 var filebutton = require('file-button');
+var THREE = require('three');
 
 var addColorPicker = require('./addcolorpicker');
 var palette = require('./palette');
@@ -2369,7 +2388,7 @@ module.exports = function(params) {
         palette: palette
     });
 };
-},{"./addcolorpicker":29,"./palette":41,"assert-plus":42,"file-button":44,"jquery":50}],40:[function(require,module,exports){
+},{"./addcolorpicker":29,"./palette":41,"assert-plus":42,"file-button":44,"jquery":50,"three":54}],40:[function(require,module,exports){
 module.exports = {
     'up': 'up',
     'down': 'down',
@@ -2392,7 +2411,9 @@ module.exports = {
     'block': 'b',
     'undo': ['ctrl+z', 'command+z'],
     'redo': ['ctrl+shift+z', 'command+shift+z'],
-    'save': ['ctrl+s', 'command+s']
+    'save': ['ctrl+s', 'command+s'],
+    'zoomin': ['ctrl+=', 'command+='],
+    'zoomout': ['ctrl+-', 'command+-']
 }
 },{}],41:[function(require,module,exports){
 module.exports = [

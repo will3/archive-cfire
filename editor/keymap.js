@@ -20,5 +20,7 @@ module.exports = {
     'block': 'b',
     'undo': ['ctrl+z', 'command+z'],
     'redo': ['ctrl+shift+z', 'command+shift+z'],
-    'save': ['ctrl+s', 'command+s']
+    'save': ['ctrl+s', 'command+s'],
+    'zoomin': ['ctrl+=', 'command+='],
+    'zoomout': ['ctrl+-', 'command+-']
 }

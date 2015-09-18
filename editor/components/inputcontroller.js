@@ -72,6 +72,8 @@ InputController.prototype.start = function() {
     this.inputComponent.keydown('undo', this.undo.bind(this));
     this.inputComponent.keydown('redo', this.redo.bind(this));
     this.inputComponent.keydown('save', this.save.bind(this));
+    this.inputComponent.keydown('zoomin', this.zoomIn.bind(this));
+    this.inputComponent.keydown('zoomout', this.zoomOut.bind(this));
 
     this.inputComponent.mousedown(this.onMousedown.bind(this));
     this.inputComponent.mouseup(this.onMouseup.bind(this));
@@ -264,6 +266,14 @@ InputController.prototype.setBlockY = function(value) {
 
 InputController.prototype.setBlockZ = function(value) {
     this.pointerController.transform.scale.z = value;
+};
+
+InputController.prototype.zoomIn = function() {
+    this.cameraController.zoom(1 / 1.1);
+};
+
+InputController.prototype.zoomOut = function() {
+    this.cameraController.zoom(1.1);
 };
 
 InputController.prototype.getCoord = function() {

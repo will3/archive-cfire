@@ -116,7 +116,7 @@ var addFace = function(side, params) {
 }
 
 var hasGap = function(block) {
-    return block.scale.x < 1 || block.scale.y < 1 || block.scale.z < 1;
+    return block.scale.x != 1 || block.scale.y != 1 || block.scale.z != 1;
 };
 
 var mergeEdges = function(edges) {
