@@ -1576,9 +1576,10 @@ Renderer.prototype.addObject = function(renderComponent) {
 Renderer.prototype.removeObject = function(renderComponent) {
     var objectMap = this.objectMap[renderComponent.id];
 
-    for (var key in objectMap.scenes) {
-        var scene = this.sceneMap[key];
-        var object = objectMap.scenes[key];
+    for (var i in objectMap.objects) {
+        var scene = objectMap.objects[i].scene;
+        var object = objectMap.objects[i].object;
+
         scene.remove(object);
     }
 
@@ -2189,8 +2190,6 @@ InputController.prototype.onMouseClick = function() {
         });
 
         this.runCommand(command);
-
-        this.gridController.updateGrid(this.chunkController.chunk);
     }
 };
 
