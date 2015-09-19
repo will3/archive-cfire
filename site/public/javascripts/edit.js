@@ -1375,6 +1375,7 @@ var Renderer = function(container) {
     this.objectMap = {};
 
     this.scene = new THREE.Scene();
+    this.edgeScene = new THREE.Scene();
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     this.camera.rotation.order = 'YXZ';
@@ -1422,7 +1423,7 @@ Renderer.prototype.initPostprocessing = function() {
     this.edgeComposer = new THREE.EffectComposer(this.renderer);
 
     //render pass
-    var renderPass = new THREE.RenderPass(this.scene, this.camera);
+    var renderPass = new THREE.RenderPass(this.edgeScene, this.camera);
     this.edgeComposer.addPass(renderPass);
 
     //edge using canny edge filter
@@ -1433,7 +1434,7 @@ Renderer.prototype.initPostprocessing = function() {
     var invert = new THREE.ShaderPass(THREE.InvertThreshholdPass);
     this.edgeComposer.addPass(invert);
 
- // Setup depth pass
+    // Setup depth pass
     var depthShader = THREE.ShaderLib["depthRGBA"];
     var depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
 
@@ -1449,7 +1450,7 @@ Renderer.prototype.initPostprocessing = function() {
         magFilter: THREE.LinearFilter
     };
     this.depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, pars);
-    
+
     //diffuse composer
     // var renderTargetDiffuse = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, renderTargetParameters);
     this.diffuseComposer = new THREE.EffectComposer(this.renderer);
@@ -1505,14 +1506,22 @@ Renderer.prototype.tick = function() {
     for (var id in this.componentMap) {
         var renderComponent = this.componentMap[id];
 
+        if (this.objectNeedsUpdate(renderComponent)) {
+            if (this.objectMap[id] != null) {
+                this.removeObject(renderComponent);
+            }
+            if (renderComponent.object != null) {
+                this.addObject(renderComponent);
+            }
+        }
+
         //add to map
         if (this.objectMap[renderComponent.id] == null) {
             if (renderComponent.object != null) {
                 this.addObject(renderComponent);
             }
         } else if (this.objectMap[id] != renderComponent.object) {
-            this.scene.remove(this.objectMap[renderComponent.id]);
-            delete this.objectMap[renderComponent.id];
+            this.removeObject(renderComponent);
 
             if (renderComponent.object != null) {
                 this.addObject(renderComponent);
@@ -1531,9 +1540,49 @@ Renderer.prototype.tick = function() {
     }
 };
 
+Renderer.prototype.objectNeedsUpdate = function(renderComponent) {
+    var objectMap = this.objectMap[renderComponent.id];
+
+    if (objectMap == null) {
+        return renderComponent.object != null;
+    }
+
+    return (objectMap.objectId != renderComponent.object.id);
+};
+
 Renderer.prototype.addObject = function(renderComponent) {
-    this.scene.add(renderComponent.object);
-    this.objectMap[renderComponent.id] = renderComponent.object;
+    var objectMap = this.objectMap[renderComponent.id] = {
+        objectId: renderComponent.object.id,
+        objects: []
+    };
+
+    var object = renderComponent.object;
+    this.scene.add(object);
+    objectMap.objects.push({
+        scene: this.scene,
+        object: object
+    });
+
+    if (renderComponent.hasEdges) {
+        object = object.clone();
+        this.edgeScene.add(object);
+        objectMap.objects.push({
+            scene: this.edgeScene,
+            object: object
+        });
+    }
+};
+
+Renderer.prototype.removeObject = function(renderComponent) {
+    var objectMap = this.objectMap[renderComponent.id];
+
+    for (var key in objectMap.scenes) {
+        var scene = this.sceneMap[key];
+        var object = objectMap.scenes[key];
+        scene.remove(object);
+    }
+
+    delete this.objectMap[renderComponent.id];
 };
 
 module.exports = Renderer;
@@ -1722,7 +1771,8 @@ var addChunk = function(game) {
     game.addEntity(entity);
 
     entity.addComponent(ChunkController);
-    entity.addComponent(RenderComponent);
+    var renderComponent = entity.addComponent(RenderComponent);
+    renderComponent.hasEdges = true;
     entity.addComponent(CollisionBody);
 };
 

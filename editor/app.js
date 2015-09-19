@@ -64,7 +64,8 @@ var addChunk = function(game) {
     game.addEntity(entity);
 
     entity.addComponent(ChunkController);
-    entity.addComponent(RenderComponent);
+    var renderComponent = entity.addComponent(RenderComponent);
+    renderComponent.hasEdges = true;
     entity.addComponent(CollisionBody);
 };
 
