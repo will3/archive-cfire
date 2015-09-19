@@ -32,16 +32,13 @@ var Renderer = function(container) {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     container.append(this.renderer.domElement);
 
-    //used for post processing
-    this.effectComposer = null;
+    //composers
+    this.edgeComposer = null;
+    this.diffuseComposer = null;
 
     this.depthMaterial = null;
 
     this.depthRenderTarget = null;
-
-    this.renderPass = null;
-
-    this.ssaoPass = null;
 
     this.onlyAO = false;
 
@@ -67,10 +64,22 @@ Renderer.prototype.onWindowResize = function() {
 };
 
 Renderer.prototype.initPostprocessing = function() {
-    // Setup render pass
-    this.renderPass = new THREE.RenderPass(this.scene, this.camera);
+    //edge composer
+    this.edgeComposer = new THREE.EffectComposer(this.renderer);
 
-    // Setup depth pass
+    //render pass
+    var renderPass = new THREE.RenderPass(this.scene, this.camera);
+    this.edgeComposer.addPass(renderPass);
+
+    //edge using canny edge filter
+    var cannyEdge = new THREE.ShaderPass(THREE.CannyEdgeFilterPass);
+    this.edgeComposer.addPass(cannyEdge);
+
+    //invert edge
+    var invert = new THREE.ShaderPass(THREE.InvertThreshholdPass);
+    this.edgeComposer.addPass(invert);
+
+ // Setup depth pass
     var depthShader = THREE.ShaderLib["depthRGBA"];
     var depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
 
@@ -86,23 +95,36 @@ Renderer.prototype.initPostprocessing = function() {
         magFilter: THREE.LinearFilter
     };
     this.depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, pars);
+    
+    //diffuse composer
+    // var renderTargetDiffuse = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, renderTargetParameters);
+    this.diffuseComposer = new THREE.EffectComposer(this.renderer);
 
-    // Setup SSAO pass
-    this.ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
-    this.ssaoPass.renderToScreen = true;
+    //render scene
+    var renderPass = new THREE.RenderPass(this.scene, this.camera);
+    this.diffuseComposer.addPass(renderPass);
+
+    //ssao
+    var ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
     //this.uniforms[ "tDiffuse" ].value will be set by ShaderPass
-    this.ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
-    this.ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
-    this.ssaoPass.uniforms['cameraNear'].value = this.camera.near;
-    this.ssaoPass.uniforms['cameraFar'].value = this.camera.far;
-    this.ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
-    this.ssaoPass.uniforms['aoClamp'].value = 0.3;
-    this.ssaoPass.uniforms['lumInfluence'].value = 1.0;
+    ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
+    ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
+    ssaoPass.uniforms['cameraNear'].value = this.camera.near;
+    ssaoPass.uniforms['cameraFar'].value = this.camera.far;
+    ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
+    ssaoPass.uniforms['aoClamp'].value = 0.5;
+    ssaoPass.uniforms['lumInfluence'].value = 1.0;
+    this.diffuseComposer.addPass(ssaoPass);
 
-    // Add pass to effect composer
-    this.effectComposer = new THREE.EffectComposer(this.renderer);
-    this.effectComposer.addPass(this.renderPass);
-    this.effectComposer.addPass(this.ssaoPass);
+    //blend with edge composer
+    var multiplyPass = new THREE.ShaderPass(THREE.MultiplyBlendShader);
+    multiplyPass.uniforms["tEdge"].value = this.edgeComposer.renderTarget2;
+    this.diffuseComposer.addPass(multiplyPass);
+
+    //copy to scene
+    var copyPass = new THREE.ShaderPass(THREE.CopyShader);
+    copyPass.renderToScreen = true;
+    this.diffuseComposer.addPass(copyPass);
 };
 
 Renderer.prototype.start = function() {
@@ -118,11 +140,10 @@ Renderer.prototype.render = function() {
     // Render depth into depthRenderTarget
     this.scene.overrideMaterial = this.depthMaterial;
     this.renderer.render(this.scene, this.camera, this.depthRenderTarget, true);
-
-    // Render renderPass and SSAO shaderPass
     this.scene.overrideMaterial = null;
-    this.effectComposer.render();
 
+    this.edgeComposer.render();
+    this.diffuseComposer.render();
     // this.renderer.render(this.scene, this.camera);
 };
 

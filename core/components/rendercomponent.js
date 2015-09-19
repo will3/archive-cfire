@@ -14,6 +14,9 @@ var RenderComponent = function() {
 
     //visible
     this.visible = true;
+
+    //has edges
+    this.hasEdges = false;
 };
 
 RenderComponent.prototype = Object.create(Component.prototype);

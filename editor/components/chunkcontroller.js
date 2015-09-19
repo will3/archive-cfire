@@ -65,7 +65,7 @@ ChunkController.prototype.updateObjects = function() {
 
     var renderObject = new THREE.Object3D();
     renderObject.add(object);
-    renderObject.add(edgeObject);
+    // renderObject.add(edgeObject);
 
     this.renderComponent.object = renderObject;
     this.collisionBody.object = object;

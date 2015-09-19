@@ -522,8 +522,32 @@ LightComponent.prototype.constructor = LightComponent;
 
 module.exports = LightComponent;
 },{"../component":5}],10:[function(require,module,exports){
-arguments[4][6][0].apply(exports,arguments)
-},{"../component":5,"dup":6,"three":55}],11:[function(require,module,exports){
+var Component = require('../component');
+var THREE = require('three');
+
+var RenderComponent = function() {
+    Component.call(this);
+
+    //sets render object
+    //defaults to empty object 3d
+    this.object = null;
+
+    //wether to perform a redraw in the next frame
+    //used by renderer
+    this.needsRedraw = false;
+
+    //visible
+    this.visible = true;
+
+    //has edges
+    this.hasEdges = false;
+};
+
+RenderComponent.prototype = Object.create(Component.prototype);
+RenderComponent.prototype.constructor = RenderComponent;
+
+module.exports = RenderComponent;
+},{"../component":5,"three":55}],11:[function(require,module,exports){
 var Component = require('../component');
 var THREE = require('three');
 
@@ -1362,16 +1386,13 @@ var Renderer = function(container) {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     container.append(this.renderer.domElement);
 
-    //used for post processing
-    this.effectComposer = null;
+    //composers
+    this.edgeComposer = null;
+    this.diffuseComposer = null;
 
     this.depthMaterial = null;
 
     this.depthRenderTarget = null;
-
-    this.renderPass = null;
-
-    this.ssaoPass = null;
 
     this.onlyAO = false;
 
@@ -1397,10 +1418,22 @@ Renderer.prototype.onWindowResize = function() {
 };
 
 Renderer.prototype.initPostprocessing = function() {
-    // Setup render pass
-    this.renderPass = new THREE.RenderPass(this.scene, this.camera);
+    //edge composer
+    this.edgeComposer = new THREE.EffectComposer(this.renderer);
 
-    // Setup depth pass
+    //render pass
+    var renderPass = new THREE.RenderPass(this.scene, this.camera);
+    this.edgeComposer.addPass(renderPass);
+
+    //edge using canny edge filter
+    var cannyEdge = new THREE.ShaderPass(THREE.CannyEdgeFilterPass);
+    this.edgeComposer.addPass(cannyEdge);
+
+    //invert edge
+    var invert = new THREE.ShaderPass(THREE.InvertThreshholdPass);
+    this.edgeComposer.addPass(invert);
+
+ // Setup depth pass
     var depthShader = THREE.ShaderLib["depthRGBA"];
     var depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
 
@@ -1416,23 +1449,36 @@ Renderer.prototype.initPostprocessing = function() {
         magFilter: THREE.LinearFilter
     };
     this.depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, pars);
+    
+    //diffuse composer
+    // var renderTargetDiffuse = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, renderTargetParameters);
+    this.diffuseComposer = new THREE.EffectComposer(this.renderer);
 
-    // Setup SSAO pass
-    this.ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
-    this.ssaoPass.renderToScreen = true;
+    //render scene
+    var renderPass = new THREE.RenderPass(this.scene, this.camera);
+    this.diffuseComposer.addPass(renderPass);
+
+    //ssao
+    var ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
     //this.uniforms[ "tDiffuse" ].value will be set by ShaderPass
-    this.ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
-    this.ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
-    this.ssaoPass.uniforms['cameraNear'].value = this.camera.near;
-    this.ssaoPass.uniforms['cameraFar'].value = this.camera.far;
-    this.ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
-    this.ssaoPass.uniforms['aoClamp'].value = 0.3;
-    this.ssaoPass.uniforms['lumInfluence'].value = 1.0;
+    ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
+    ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
+    ssaoPass.uniforms['cameraNear'].value = this.camera.near;
+    ssaoPass.uniforms['cameraFar'].value = this.camera.far;
+    ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
+    ssaoPass.uniforms['aoClamp'].value = 0.5;
+    ssaoPass.uniforms['lumInfluence'].value = 1.0;
+    this.diffuseComposer.addPass(ssaoPass);
 
-    // Add pass to effect composer
-    this.effectComposer = new THREE.EffectComposer(this.renderer);
-    this.effectComposer.addPass(this.renderPass);
-    this.effectComposer.addPass(this.ssaoPass);
+    //blend with edge composer
+    var multiplyPass = new THREE.ShaderPass(THREE.MultiplyBlendShader);
+    multiplyPass.uniforms["tEdge"].value = this.edgeComposer.renderTarget2;
+    this.diffuseComposer.addPass(multiplyPass);
+
+    //copy to scene
+    var copyPass = new THREE.ShaderPass(THREE.CopyShader);
+    copyPass.renderToScreen = true;
+    this.diffuseComposer.addPass(copyPass);
 };
 
 Renderer.prototype.start = function() {
@@ -1448,11 +1494,10 @@ Renderer.prototype.render = function() {
     // Render depth into depthRenderTarget
     this.scene.overrideMaterial = this.depthMaterial;
     this.renderer.render(this.scene, this.camera, this.depthRenderTarget, true);
-
-    // Render renderPass and SSAO shaderPass
     this.scene.overrideMaterial = null;
-    this.effectComposer.render();
 
+    this.edgeComposer.render();
+    this.diffuseComposer.render();
     // this.renderer.render(this.scene, this.camera);
 };
 
@@ -1556,11 +1601,17 @@ module.exports = function() {
 window['THREE'] = require('three');
 require('../../three/shaders/SSAOShader.js');
 require('../../three/shaders/CopyShader.js');
+require('../../three/shaders/FXAAShader.js');
+require('../../three/shaders/MedianFilter.js');
+require('../../three/shaders/InvertThreshholdPass.js');
+require('../../three/shaders/CannyEdgeFilterPass.js');
+require('../../three/shaders/MultiplyBlendShader.js');
+
 require('../../three/postprocessing/RenderPass.js');
 require('../../three/postprocessing/ShaderPass.js');
 require('../../three/postprocessing/MaskPass.js');
 require('../../three/postprocessing/EffectComposer.js');
-},{"../../three/postprocessing/EffectComposer.js":57,"../../three/postprocessing/MaskPass.js":58,"../../three/postprocessing/RenderPass.js":59,"../../three/postprocessing/ShaderPass.js":60,"../../three/shaders/CopyShader.js":61,"../../three/shaders/SSAOShader.js":62,"three":55}],29:[function(require,module,exports){
+},{"../../three/postprocessing/EffectComposer.js":57,"../../three/postprocessing/MaskPass.js":58,"../../three/postprocessing/RenderPass.js":59,"../../three/postprocessing/ShaderPass.js":60,"../../three/shaders/CannyEdgeFilterPass.js":61,"../../three/shaders/CopyShader.js":62,"../../three/shaders/FXAAShader.js":63,"../../three/shaders/InvertThreshholdPass.js":64,"../../three/shaders/MedianFilter.js":65,"../../three/shaders/MultiplyBlendShader.js":66,"../../three/shaders/SSAOShader.js":67,"three":55}],29:[function(require,module,exports){
 var $ = require('jquery');
 
 module.exports = function(callback) {
@@ -1820,7 +1871,7 @@ ChunkController.prototype.updateObjects = function() {
 
     var renderObject = new THREE.Object3D();
     renderObject.add(object);
-    renderObject.add(edgeObject);
+    // renderObject.add(edgeObject);
 
     this.renderComponent.object = renderObject;
     this.collisionBody.object = object;
@@ -2750,7 +2801,7 @@ Object.keys(assert).forEach(function (k) {
 });
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":72,"assert":63,"buffer":65,"stream":86,"util":89}],44:[function(require,module,exports){
+},{"_process":77,"assert":68,"buffer":70,"stream":91,"util":94}],44:[function(require,module,exports){
 'use strict';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -63980,6 +64031,51 @@ THREE.ShaderPass.prototype = {
 };
 
 },{}],61:[function(require,module,exports){
+/* Written by Arefin Mohiuddin - graphics n00b */
+
+THREE.CannyEdgeFilterPass = {
+
+	uniforms: {
+
+		"tDiffuse": { type: "t", value: null },
+		"uWindow": { type: "v2", value: new THREE.Vector2(parseFloat(window.innerWidth), parseFloat(window.innerHeight)) }
+
+	},
+
+	vertexShader: [
+
+		"varying vec2 vUv;",
+
+		"void main() {",
+
+			"vUv = uv;",
+			"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+
+		"}"
+
+	].join("\n"),
+
+	fragmentShader: [
+
+		"uniform sampler2D tDiffuse;",
+		"uniform vec2 uWindow;",
+
+		"varying vec2 vUv;",
+		"vec2 offset  = 1.0 / (uWindow / 0.5 );",
+
+		"void main() {",
+		"	vec2 pixelRight_Coord = vUv + vec2(offset.x, 0.0);",
+		"	vec2 pixelLeft_Coord = vUv + vec2(-offset.x, 0.0);",
+		"	vec2 pixelTop_Coord = vUv + vec2(0.0, offset.y);",
+		"	vec2 pixelBottom_Coord = vUv + vec2(0.0, -offset.y);",
+		"	vec2 gradient = vec2(length(texture2D(tDiffuse, pixelRight_Coord).xyz - texture2D(tDiffuse, pixelLeft_Coord).xyz), length(texture2D(tDiffuse, pixelTop_Coord).xyz - texture2D(tDiffuse, pixelBottom_Coord).xyz));",
+		"	gl_FragColor = vec4(length(gradient));",
+		"}" 
+
+	].join("\n")
+
+};
+},{}],62:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  *
@@ -64027,7 +64123,239 @@ THREE.CopyShader = {
 
 };
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
+/**
+ * @author alteredq / http://alteredqualia.com/
+ * @author davidedc / http://www.sketchpatch.net/
+ *
+ * NVIDIA FXAA by Timothy Lottes
+ * http://timothylottes.blogspot.com/2011/06/fxaa3-source-released.html
+ * - WebGL port by @supereggbert
+ * http://www.glge.org/demos/fxaa/
+ */
+
+THREE.FXAAShader = {
+
+	uniforms: {
+
+		"tDiffuse":   { type: "t", value: null },
+		"resolution": { type: "v2", value: new THREE.Vector2( 1 / 1024, 1 / 512 ) }
+
+	},
+
+	vertexShader: [
+
+		"void main() {",
+
+			"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+
+		"}"
+
+	].join( "\n" ),
+
+	fragmentShader: [
+
+		"uniform sampler2D tDiffuse;",
+		"uniform vec2 resolution;",
+
+		"#define FXAA_REDUCE_MIN   (1.0/128.0)",
+		"#define FXAA_REDUCE_MUL   (1.0/8.0)",
+		"#define FXAA_SPAN_MAX     8.0",
+
+		"void main() {",
+
+			"vec3 rgbNW = texture2D( tDiffuse, ( gl_FragCoord.xy + vec2( -1.0, -1.0 ) ) * resolution ).xyz;",
+			"vec3 rgbNE = texture2D( tDiffuse, ( gl_FragCoord.xy + vec2( 1.0, -1.0 ) ) * resolution ).xyz;",
+			"vec3 rgbSW = texture2D( tDiffuse, ( gl_FragCoord.xy + vec2( -1.0, 1.0 ) ) * resolution ).xyz;",
+			"vec3 rgbSE = texture2D( tDiffuse, ( gl_FragCoord.xy + vec2( 1.0, 1.0 ) ) * resolution ).xyz;",
+			"vec4 rgbaM  = texture2D( tDiffuse,  gl_FragCoord.xy  * resolution );",
+			"vec3 rgbM  = rgbaM.xyz;",
+			"vec3 luma = vec3( 0.299, 0.587, 0.114 );",
+
+			"float lumaNW = dot( rgbNW, luma );",
+			"float lumaNE = dot( rgbNE, luma );",
+			"float lumaSW = dot( rgbSW, luma );",
+			"float lumaSE = dot( rgbSE, luma );",
+			"float lumaM  = dot( rgbM,  luma );",
+			"float lumaMin = min( lumaM, min( min( lumaNW, lumaNE ), min( lumaSW, lumaSE ) ) );",
+			"float lumaMax = max( lumaM, max( max( lumaNW, lumaNE) , max( lumaSW, lumaSE ) ) );",
+
+			"vec2 dir;",
+			"dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));",
+			"dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));",
+
+			"float dirReduce = max( ( lumaNW + lumaNE + lumaSW + lumaSE ) * ( 0.25 * FXAA_REDUCE_MUL ), FXAA_REDUCE_MIN );",
+
+			"float rcpDirMin = 1.0 / ( min( abs( dir.x ), abs( dir.y ) ) + dirReduce );",
+			"dir = min( vec2( FXAA_SPAN_MAX,  FXAA_SPAN_MAX),",
+				  "max( vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),",
+						"dir * rcpDirMin)) * resolution;",
+			"vec4 rgbA = (1.0/2.0) * (",
+        	"texture2D(tDiffuse,  gl_FragCoord.xy  * resolution + dir * (1.0/3.0 - 0.5)) +",
+			"texture2D(tDiffuse,  gl_FragCoord.xy  * resolution + dir * (2.0/3.0 - 0.5)));",
+    		"vec4 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * (",
+			"texture2D(tDiffuse,  gl_FragCoord.xy  * resolution + dir * (0.0/3.0 - 0.5)) +",
+      		"texture2D(tDiffuse,  gl_FragCoord.xy  * resolution + dir * (3.0/3.0 - 0.5)));",
+    		"float lumaB = dot(rgbB, vec4(luma, 0.0));",
+
+			"if ( ( lumaB < lumaMin ) || ( lumaB > lumaMax ) ) {",
+
+				"gl_FragColor = rgbA;",
+
+			"} else {",
+				"gl_FragColor = rgbB;",
+
+			"}",
+
+		"}"
+
+	].join( "\n" )
+
+};
+
+},{}],64:[function(require,module,exports){
+/* Written by Arefin Mohiuddin - graphics n00b */
+
+THREE.InvertThreshholdPass = {
+
+	uniforms: {
+
+		"tDiffuse": { type: "t", value: null },
+
+	},
+
+	vertexShader: [
+
+		"varying vec2 vUv;",
+
+		"void main() {",
+
+			"vUv = uv;",
+			"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+
+		"}"
+
+	].join("\n"),
+
+	fragmentShader: [
+
+		"uniform sampler2D tDiffuse;",
+
+		"varying vec2 vUv;",
+
+
+		"void main() {",
+			"vec4 colorSum = texture2D( tDiffuse, vUv );",
+			"vec4 invert = vec4(1.0 - colorSum.r, 1.0 - colorSum.g, 1.0 - colorSum.b, 1.0 );",
+			"vec3 threshhold;",
+			"if(invert.r < 0.985 || invert.g < 0.985 || invert.b < 0.985){",
+			"	threshhold = vec3(0.0);",
+			"	} else {",
+			"	threshhold = vec3(1.0);",
+			"}",
+			"gl_FragColor = vec4(threshhold, 1.0);",
+
+		"}"
+
+	].join("\n")
+
+};
+},{}],65:[function(require,module,exports){
+// Median Filter by graphics n00b Arefin Mohiuddin
+
+THREE.MedianFilter = {
+
+	uniforms: {
+
+		"tDiffuse": { type: "t", value: null },
+		"dim":      { type: "v2", value: new THREE.Vector2(1.0 / 2048.0, 1.0 / 2048.0) }
+
+	},
+
+	vertexShader: [
+
+		"varying vec2 vUv;",
+
+		"void main() {",
+
+			"vUv = uv;",
+			"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+
+		"}"
+
+	].join("\n"),
+
+	fragmentShader: [
+
+		"uniform sampler2D tDiffuse;",
+		"uniform vec2 dim;",
+
+		"varying vec2 vUv;",
+
+		"void main() {",
+			"vec2 onePixel = vec2(1.0, 1.0) / dim;",
+			"vec4 colorSum = 	",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2(-1.0, -1.0))) * 1.0 + ",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2( 0.0, -1.0))) * 1.0 + ",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2( 1.0, -1.0))) * 1.0 + ",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2(-1.0,  0.0))) * 1.0 + ",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2( 0.0,  0.0))) * 1.0 + ",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2( 1.0,  0.0))) * 1.0 + ",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2(-1.0,  1.0))) * 1.0 + ",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2( 0.0,  1.0))) * 1.0 + ",
+			"	texture2D(tDiffuse, vUv + ( onePixel * vec2( 1.0,  1.0))) * 1.0;  ",
+			"	gl_FragColor = vec4(colorSum.rgb / 9.0, 1.0);",
+
+		"}"
+
+	].join("\n")
+
+};
+},{}],66:[function(require,module,exports){
+/* Written by Arefin Mohiuddin - graphics n00b */
+
+THREE.MultiplyBlendShader = {
+
+	uniforms: {
+
+		"tDiffuse": { type: "t", value: null },
+		"tEdge": { type: "t", value: null}
+
+	},
+
+	vertexShader: [
+
+		"varying vec2 vUv;",
+
+		"void main() {",
+
+			"vUv = uv;",
+			"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+
+		"}"
+
+	].join("\n"),
+
+	fragmentShader: [
+
+		"uniform sampler2D tDiffuse;",
+		"uniform sampler2D tEdge;",
+
+		"varying vec2 vUv;",
+
+
+		"void main() {",
+			"vec4 diffuse = texture2D( tDiffuse, vUv );",
+			"vec4 edge = texture2D( tEdge, vUv );",
+
+			"gl_FragColor = diffuse * edge;",
+
+		"}"
+
+	].join("\n")
+
+};
+},{}],67:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  *
@@ -64254,7 +64582,7 @@ THREE.SSAOShader = {
 
 };
 
-},{}],63:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
 // THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
@@ -64615,9 +64943,9 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":89}],64:[function(require,module,exports){
+},{"util/":94}],69:[function(require,module,exports){
 
-},{}],65:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -66152,7 +66480,7 @@ function blitBuffer (src, dst, offset, length) {
   return i
 }
 
-},{"base64-js":66,"ieee754":67,"is-array":68}],66:[function(require,module,exports){
+},{"base64-js":71,"ieee754":72,"is-array":73}],71:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -66278,7 +66606,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],67:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -66364,7 +66692,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],68:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 
 /**
  * isArray
@@ -66399,7 +66727,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],69:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -66702,7 +67030,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],70:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -66727,12 +67055,12 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],71:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],72:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -66824,10 +67152,10 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],73:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":74}],74:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":79}],79:[function(require,module,exports){
 // a duplex stream is just a stream that is both readable and writable.
 // Since JS doesn't have multiple prototypal inheritance, this class
 // prototypally inherits from Readable, and then parasitically from
@@ -66911,7 +67239,7 @@ function forEach (xs, f) {
   }
 }
 
-},{"./_stream_readable":76,"./_stream_writable":78,"core-util-is":79,"inherits":70,"process-nextick-args":80}],75:[function(require,module,exports){
+},{"./_stream_readable":81,"./_stream_writable":83,"core-util-is":84,"inherits":75,"process-nextick-args":85}],80:[function(require,module,exports){
 // a passthrough stream.
 // basically just the most minimal sort of Transform stream.
 // Every written chunk gets output as-is.
@@ -66940,7 +67268,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":77,"core-util-is":79,"inherits":70}],76:[function(require,module,exports){
+},{"./_stream_transform":82,"core-util-is":84,"inherits":75}],81:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -67903,7 +68231,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":74,"_process":72,"buffer":65,"core-util-is":79,"events":69,"inherits":70,"isarray":71,"process-nextick-args":80,"string_decoder/":87,"util":64}],77:[function(require,module,exports){
+},{"./_stream_duplex":79,"_process":77,"buffer":70,"core-util-is":84,"events":74,"inherits":75,"isarray":76,"process-nextick-args":85,"string_decoder/":92,"util":69}],82:[function(require,module,exports){
 // a transform stream is a readable/writable stream where you do
 // something with the data.  Sometimes it's called a "filter",
 // but that's not a great name for it, since that implies a thing where
@@ -68102,7 +68430,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":74,"core-util-is":79,"inherits":70}],78:[function(require,module,exports){
+},{"./_stream_duplex":79,"core-util-is":84,"inherits":75}],83:[function(require,module,exports){
 // A bit simpler than readable streams.
 // Implement an async ._write(chunk, cb), and it'll handle all
 // the drain event emission and buffering.
@@ -68624,7 +68952,7 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-},{"./_stream_duplex":74,"buffer":65,"core-util-is":79,"events":69,"inherits":70,"process-nextick-args":80,"util-deprecate":81}],79:[function(require,module,exports){
+},{"./_stream_duplex":79,"buffer":70,"core-util-is":84,"events":74,"inherits":75,"process-nextick-args":85,"util-deprecate":86}],84:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -68734,7 +69062,7 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":65}],80:[function(require,module,exports){
+},{"buffer":70}],85:[function(require,module,exports){
 (function (process){
 'use strict';
 module.exports = nextTick;
@@ -68751,7 +69079,7 @@ function nextTick(fn) {
 }
 
 }).call(this,require('_process'))
-},{"_process":72}],81:[function(require,module,exports){
+},{"_process":77}],86:[function(require,module,exports){
 (function (global){
 
 /**
@@ -68817,10 +69145,10 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],82:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":75}],83:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":80}],88:[function(require,module,exports){
 var Stream = (function (){
   try {
     return require('st' + 'ream'); // hack to fix a circular dependency issue when used with browserify
@@ -68834,13 +69162,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":74,"./lib/_stream_passthrough.js":75,"./lib/_stream_readable.js":76,"./lib/_stream_transform.js":77,"./lib/_stream_writable.js":78}],84:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":79,"./lib/_stream_passthrough.js":80,"./lib/_stream_readable.js":81,"./lib/_stream_transform.js":82,"./lib/_stream_writable.js":83}],89:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":77}],85:[function(require,module,exports){
+},{"./lib/_stream_transform.js":82}],90:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":78}],86:[function(require,module,exports){
+},{"./lib/_stream_writable.js":83}],91:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -68969,7 +69297,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":69,"inherits":70,"readable-stream/duplex.js":73,"readable-stream/passthrough.js":82,"readable-stream/readable.js":83,"readable-stream/transform.js":84,"readable-stream/writable.js":85}],87:[function(require,module,exports){
+},{"events":74,"inherits":75,"readable-stream/duplex.js":78,"readable-stream/passthrough.js":87,"readable-stream/readable.js":88,"readable-stream/transform.js":89,"readable-stream/writable.js":90}],92:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -69192,14 +69520,14 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":65}],88:[function(require,module,exports){
+},{"buffer":70}],93:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],89:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -69789,4 +70117,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":88,"_process":72,"inherits":70}]},{},[31]);
+},{"./support/isBuffer":93,"_process":77,"inherits":75}]},{},[31]);
