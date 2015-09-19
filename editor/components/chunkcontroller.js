@@ -40,8 +40,9 @@ ChunkController.prototype.addBlock = function(coord, block) {
 };
 
 ChunkController.prototype.removeBlock = function(coord) {
-    this.chunk.remove(coord.x, coord.y, coord.z);
+    var block = this.chunk.remove(coord.x, coord.y, coord.z);
     this.updateObjects();
+    return block;
 }
 
 ChunkController.prototype.updateObjects = function() {

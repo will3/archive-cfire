@@ -27,10 +27,13 @@ Chunk.prototype = {
 
     remove: function(x, y, z) {
         if (this.map[x] == null || this.map[x][y] == null) {
-            return;
+            return null;
         }
 
+        var block = this.map[x][y][z];
         delete this.map[x][y][z];
+
+        return block;
     },
 
     get: function(x, y, z) {

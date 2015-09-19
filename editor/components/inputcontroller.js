@@ -11,6 +11,7 @@ var CameraController = require('./cameracontroller');
 var PointerController = require('./pointercontroller');
 
 var AddBlock = require('./commands/addblock');
+var RemoveBlock = require('./commands/removeblock');
 
 var InputController = function() {
     Component.call(this);
@@ -39,6 +40,8 @@ var InputController = function() {
     this.commands = [];
 
     this.redoCommands = [];
+
+    this.pointerEnabled = true;
 };
 
 InputController.prototype = Object.create(Component.prototype);
@@ -132,6 +135,9 @@ InputController.prototype.onMousedown = function() {
 InputController.prototype.onMouseup = function() {
     this.mousehold = false;
 
+    this.pointerEnabled = true;
+    this.pointerController.setVisible(true);
+
     if (this.lastMousedownTime != null) {
         var diff = new Date().getTime() - this.lastMousedownTime;
 
@@ -152,8 +158,17 @@ InputController.prototype.onMouseClick = function() {
         return;
     }
 
+    if (!this.pointerEnabled) {
+        return;
+    }
+
     if (this.isRemove) {
-        this.chunkController.removeBlock(coord);
+        var command = new RemoveBlock({
+            chunkController: this.chunkController,
+            coord: coord
+        });
+
+        this.runCommand(command);
     } else {
         var command = new AddBlock({
             chunkController: this.chunkController,
@@ -162,8 +177,6 @@ InputController.prototype.onMouseClick = function() {
         });
 
         this.runCommand(command);
-
-        this.gridController.updateGrid(this.chunkController.chunk);
     }
 };
 
@@ -197,6 +210,9 @@ InputController.prototype.onMouseDrag = function(dragX, dragY) {
         x: dragX * this.xSpeed,
         y: dragY * this.ySpeed
     });
+
+    this.pointerEnabled = false;
+    this.pointerController.setVisible(false);
 };
 
 InputController.prototype.runCommand = function(command) {
