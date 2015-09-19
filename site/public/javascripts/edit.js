@@ -1455,7 +1455,6 @@ Renderer.prototype.initPostprocessing = function() {
     this.depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, pars);
 
     //diffuse composer
-    // var renderTargetDiffuse = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, renderTargetParameters);
     this.diffuseComposer = new THREE.EffectComposer(this.renderer);
 
     //render scene
