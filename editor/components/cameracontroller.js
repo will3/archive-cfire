@@ -24,7 +24,10 @@ CameraController.prototype.rotateCamera = function(amount) {
     this.rotation.x -= amount.y;
 
     this.rotation.x = clamp(this.rotation.x, this.minPitch, this.maxPitch);
+    this.updatePosition();
+};
 
+CameraController.prototype.tick = function() {
     this.updatePosition();
 };
 

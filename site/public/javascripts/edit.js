@@ -1401,12 +1401,15 @@ var Renderer = function(container) {
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     this.camera.rotation.order = 'YXZ';
 
-    this.renderer = new THREE.WebGLRenderer({
-        antialias: false
+    var renderer = new THREE.WebGLRenderer({
+        antialias: true
     });
-    this.renderer.setClearColor(0xffffff, 1);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    container.append(this.renderer.domElement);
+    renderer.setClearColor(0xffffff);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.append(renderer.domElement);
+
+    this.renderer = renderer;
 
     //composers
     this.edgeComposer = null;
@@ -1899,7 +1902,10 @@ CameraController.prototype.rotateCamera = function(amount) {
     this.rotation.x -= amount.y;
 
     this.rotation.x = clamp(this.rotation.x, this.minPitch, this.maxPitch);
+    this.updatePosition();
+};
 
+CameraController.prototype.tick = function() {
     this.updatePosition();
 };
 
@@ -1945,7 +1951,7 @@ var ChunkController = function() {
 
     this.lineColor = 0x333333;
 
-
+    this.wireFrameHidden = true;
 }
 
 ChunkController.prototype = Object.create(Component.prototype);
@@ -1990,14 +1996,12 @@ ChunkController.prototype.updateObjects = function() {
         geometry.vertices.push(edge.end);
     };
 
-    var edgeObject = new THREE.Line(geometry, new THREE.LineBasicMaterial({
-        color: 0x000000,
-    }), THREE.LinePieces);
-
     this.wireFrameRenderComponent.visible = !this.wireFrameHidden;
 
     this.renderComponent.object = object;
-    this.wireFrameRenderComponent.object = edgeObject;
+
+    var wireframe = new THREE.WireframeHelper(object, 0x000000);
+    this.wireFrameRenderComponent.object = wireframe;
     this.collisionBody.object = object;
 };
 
@@ -2017,6 +2021,7 @@ ChunkController.prototype.serialize = function() {
 
 ChunkController.prototype.load = function(json) {
     this.chunk = deserialize(json);
+    this.updateObjects();
 };
 
 ChunkController.prototype.loadFromUrl = function() {
@@ -2026,6 +2031,9 @@ ChunkController.prototype.loadFromUrl = function() {
     }
     var json = JSON.parse(require('lz-string').decompressFromEncodedURIComponent(data));
     this.chunk = deserialize(json);
+    if (this.started) {
+        this.updateObjects();
+    }
 };
 
 ChunkController.prototype.setWireFrameHidden = function(hidden) {

@@ -26,12 +26,15 @@ var Renderer = function(container) {
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     this.camera.rotation.order = 'YXZ';
 
-    this.renderer = new THREE.WebGLRenderer({
-        antialias: false
+    var renderer = new THREE.WebGLRenderer({
+        antialias: true
     });
-    this.renderer.setClearColor(0xffffff, 1);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    container.append(this.renderer.domElement);
+    renderer.setClearColor(0xffffff);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.append(renderer.domElement);
+
+    this.renderer = renderer;
 
     //composers
     this.edgeComposer = null;

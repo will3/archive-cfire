@@ -23,7 +23,7 @@ var ChunkController = function() {
 
     this.lineColor = 0x333333;
 
-
+    this.wireFrameHidden = true;
 }
 
 ChunkController.prototype = Object.create(Component.prototype);
@@ -68,14 +68,12 @@ ChunkController.prototype.updateObjects = function() {
         geometry.vertices.push(edge.end);
     };
 
-    var edgeObject = new THREE.Line(geometry, new THREE.LineBasicMaterial({
-        color: 0x000000,
-    }), THREE.LinePieces);
-
     this.wireFrameRenderComponent.visible = !this.wireFrameHidden;
 
     this.renderComponent.object = object;
-    this.wireFrameRenderComponent.object = edgeObject;
+
+    var wireframe = new THREE.WireframeHelper(object, 0x000000);
+    this.wireFrameRenderComponent.object = wireframe;
     this.collisionBody.object = object;
 };
 
@@ -95,6 +93,7 @@ ChunkController.prototype.serialize = function() {
 
 ChunkController.prototype.load = function(json) {
     this.chunk = deserialize(json);
+    this.updateObjects();
 };
 
 ChunkController.prototype.loadFromUrl = function() {
@@ -104,6 +103,9 @@ ChunkController.prototype.loadFromUrl = function() {
     }
     var json = JSON.parse(require('lz-string').decompressFromEncodedURIComponent(data));
     this.chunk = deserialize(json);
+    if (this.started) {
+        this.updateObjects();
+    }
 };
 
 ChunkController.prototype.setWireFrameHidden = function(hidden) {
