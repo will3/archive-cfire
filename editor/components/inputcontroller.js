@@ -43,7 +43,7 @@ var InputController = function() {
 
     this.pointerEnabled = true;
 
-    this.form = null;
+    this.form = require('../ui/form')();
 };
 
 InputController.prototype = Object.create(Component.prototype);

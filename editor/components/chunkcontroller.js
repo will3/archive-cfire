@@ -38,6 +38,7 @@ ChunkController.prototype.start = function() {
     assert.object(this.renderComponent, 'renderComponent');
     assert.object(this.collisionBody, 'collisionBody');
 
+    this.loadFromUrl();
     this.updateObjects();
 };
 

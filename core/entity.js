@@ -18,6 +18,11 @@ Entity.prototype = {
     constructor: Entity,
 
     addComponent: function(component, name) {
+        if (_.isString(component)) {
+            var type = types[component];
+            return this.addComponent(new type(), name);
+        }
+
         if (_.isFunction(component)) {
             var type = component;
             return this.addComponent(new type(), name);

@@ -40,6 +40,8 @@ var Game = function(params) {
     this.console = this.getSystem(Console);
 
     this.types = params.types || {};
+
+    this.scenario = params.scenario || null;
 };
 
 Game.prototype = {
@@ -110,6 +112,11 @@ Game.prototype = {
 
     removeObject3d: function(object) {
         this.renderer.scene.remove(object);
+    },
+
+    load: function(data) {
+        var loader = require('./loader')(this);
+        loader.load(data);
     }
 };
 

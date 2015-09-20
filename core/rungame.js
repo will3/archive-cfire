@@ -6,6 +6,10 @@ module.exports = function(game, params) {
 
     game.start();
 
+    if (game.scenario != null) {
+        game.load(game.scenario);
+    }
+
     var interval = function() {
         game.tick(frameInterval);
         game.afterTick();

@@ -1,3 +1,4 @@
+var THREE = require('three');
 var System = require('../system');
 var LightComponent = require('../components/lightcomponent');
 
@@ -19,11 +20,31 @@ Lighting.prototype = Object.create(System.prototype);
 Lighting.prototype.constructor = Lighting;
 
 Lighting.prototype.addLight = function(component) {
-    this.scene.add(component.light);
-    var edgeLight = component.light.clone();
+    var light = this.getLight(component);
+    if (light == null) {
+        return;
+    }
+    this.scene.add(light);
+    var edgeLight = light.clone();
     this.edgeScene.add(edgeLight);
-    this.lightMap[component.id] = [component.light, edgeLight];
+    this.lightMap[component.id] = [light, edgeLight];
 };
+
+Lighting.prototype.getLight = function(component) {
+    switch (component.lightType) {
+        case 'ambient':
+            return new THREE.AmbientLight(component.color);
+
+        case 'directional':
+            {
+                var light = new THREE.DirectionalLight(component.color, component.intensity);
+                light.position.set(component.position.x, component.position.y, component.position.z);
+                return light;
+            }
+        default:
+            return null;
+    }
+}
 
 Lighting.prototype.tick = function() {
     for (var id in this.componentMap) {
