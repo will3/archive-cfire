@@ -1,6 +1,5 @@
 var _ = require('lodash');
 var $ = require('jquery');
-var extend = require('extend');
 
 var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
@@ -38,10 +37,6 @@ var Game = function(params) {
     this.inputManager = this.getSystem(InputManager);
     this.collision = this.getSystem(Collision);
     this.console = this.getSystem(Console);
-
-    this.types = params.types || {};
-
-    this.scenario = params.scenario || null;
 };
 
 Game.prototype = {
@@ -75,8 +70,6 @@ Game.prototype = {
         document.oncontextmenu = document.body.oncontextmenu = function() {
             return false;
         }
-
-        extend(require('./macros/types'), this.types);
     },
 
     tick: function(elapsedTime) {
