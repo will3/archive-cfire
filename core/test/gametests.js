@@ -7,31 +7,26 @@ describe('Game', function() {
     var game, renderer, inputManager, container, window;
 
     beforeEach(function() {
-        renderer = {
-            setEntityManager: function() {}
-        };
-        inputManager = {
-            setEntityManager: function() {}
-        };
         container = {
             focus: function() {}
         };
-        window = {};
+
+        systems = [];
 
         game = new Game({
-            renderer: renderer,
-            inputManager: inputManager,
-            container: container,
-            window: window
+            systems: systems,
+            container: container
         });
     });
 
     describe('#tick', function() {
         it('should tick all systems', function() {
             var sys1 = sinon.mock({
+                start: function() {},
                 tick: function() {}
             });
             var sys2 = sinon.mock({
+                start: function() {},
                 tick: function() {}
             });
 

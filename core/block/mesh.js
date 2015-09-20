@@ -116,6 +116,10 @@ var addFace = function(side, params) {
 }
 
 var hasGap = function(block) {
+    if (block.scale == null) {
+        return false;
+    }
+    
     return block.scale.x != 1 || block.scale.y != 1 || block.scale.z != 1;
 };
 

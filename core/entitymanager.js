@@ -111,6 +111,20 @@ EntityManager.prototype = {
         });
     },
 
+    getEntities: function(id) {
+        var self = this;
+        if(id == null){
+            return _.map(this.root.entityIds, function(entityId){
+                return self.getEntity(entityId);
+            });
+        }
+
+        var map = this.entityMap[id];
+        return _.map(map.entityIds, function(entityId) {
+            return self.getEntity(entityId);
+        });
+    },
+
     getEntity: function(id) {
         var map = this.entityMap[id];
         return map == null ? null : map.entity;

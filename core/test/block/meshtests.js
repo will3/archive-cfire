@@ -7,10 +7,10 @@ describe('mesh', function() {
         var chunk = new Chunk();
         chunk.add(0, 0, 0, 'a block');
 
-        var geometry = mesh(chunk);
+        var object = mesh(chunk);
 
-        expect(geometry.faces.length).to.equal(6 * 2);
-        expect(geometry.vertices.length).to.equal(8);
+        expect(object.geometry.faces.length).to.equal(6 * 2);
+        expect(object.geometry.vertices.length).to.equal(8);
     });
 
     it('should have 10 faces and 12 vertices for 2 neibouring blocks', function() {
@@ -18,9 +18,9 @@ describe('mesh', function() {
         chunk.add(0, 0, 0, 'a block');
         chunk.add(1, 0, 0, 'neighbour');
 
-        var geometry = mesh(chunk);
+        var object = mesh(chunk);
 
-        expect(geometry.faces.length).to.equal(10 * 2);
-        expect(geometry.vertices.length).to.equal(12);
+        expect(object.geometry.faces.length).to.equal(10 * 2);
+        expect(object.geometry.vertices.length).to.equal(12);
     });
 });

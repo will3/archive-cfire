@@ -220,6 +220,10 @@ var addFace = function(side, params) {
 }
 
 var hasGap = function(block) {
+    if (block.scale == null) {
+        return false;
+    }
+    
     return block.scale.x != 1 || block.scale.y != 1 || block.scale.z != 1;
 };
 
@@ -767,6 +771,20 @@ EntityManager.prototype = {
 
         this.removeComponentCallbacks.forEach(function(callback) {
             callback(id);
+        });
+    },
+
+    getEntities: function(id) {
+        var self = this;
+        if(id == null){
+            return _.map(this.root.entityIds, function(entityId){
+                return self.getEntity(entityId);
+            });
+        }
+
+        var map = this.entityMap[id];
+        return _.map(map.entityIds, function(entityId) {
+            return self.getEntity(entityId);
         });
     },
 
@@ -1669,6 +1687,10 @@ module.exports = function() {
     return raycaster;
 }
 },{"../macros/getgame":16,"three":60}],28:[function(require,module,exports){
+if (typeof window === 'undefined') {
+    return;
+}
+
 window['THREE'] = require('three');
 require('../../three/shaders/SSAOShader.js');
 require('../../three/shaders/CopyShader.js');

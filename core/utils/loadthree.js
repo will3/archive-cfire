@@ -1,3 +1,7 @@
+if (typeof window === 'undefined') {
+    return;
+}
+
 window['THREE'] = require('three');
 require('../../three/shaders/SSAOShader.js');
 require('../../three/shaders/CopyShader.js');
