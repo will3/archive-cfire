@@ -19,7 +19,6 @@ var Renderer = function(container) {
 
     //object look up, by component id
     this.objectMap = {};
-    this.edgeObjectMap = {};
 
     this.scene = new THREE.Scene();
     this.edgeScene = new THREE.Scene();
@@ -176,13 +175,15 @@ Renderer.prototype.tick = function() {
     for (var id in this.componentMap) {
         var renderComponent = this.componentMap[id];
 
-        if (this.objectNeedsUpdate(renderComponent)) {
+        if (renderComponent.needsUpdate || !renderComponent.addedToScene) {
             if (this.objectMap[id] != null) {
                 this.removeObject(renderComponent);
             }
             if (renderComponent.object != null) {
                 this.addObject(renderComponent);
             }
+
+            renderComponent.addedToScene = true;
         }
 
         if (renderComponent.object == null) {
@@ -197,32 +198,29 @@ Renderer.prototype.tick = function() {
     }
 };
 
-Renderer.prototype.objectNeedsUpdate = function(renderComponent) {
-    return this.objectMap[renderComponent.id] != renderComponent.object;
-};
-
 Renderer.prototype.addObject = function(renderComponent) {
     var object = renderComponent.object;
     this.scene.add(object);
-    this.objectMap[renderComponent.id] = object;
+    var objects = [object];
 
     if (renderComponent.hasEdges) {
         var edgeObject = object.clone();
-        this.edgeObjectMap[renderComponent.id] = edgeObject;
+        objects.push(edgeObject);
         this.edgeScene.add(edgeObject);
     }
+
+    this.objectMap[renderComponent.id] = objects;
 };
 
 Renderer.prototype.removeObject = function(renderComponent) {
-    var object = this.objectMap[renderComponent.id];
-    this.scene.add(object);
-    delete this.objectMap[renderComponent.id];
-
-    var edgeObject = this.edgeObjectMap[renderComponent.id];
-    if (edgeObject != null) {
-        this.edgeScene.remove(edgeObject);
-        delete this.edgeObjectMap[renderComponent.id];
+    var objects = this.objectMap[renderComponent.id];
+    if (objects == null) {
+        return;
     }
+
+    objects.forEach(function(object) {
+        object.parent.remove(object);
+    });
 };
 
 module.exports = Renderer;

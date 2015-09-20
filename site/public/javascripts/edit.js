@@ -565,16 +565,66 @@ var LightComponent = function() {
     Component.call(this);
 
     //light object this component holds
-    this.light = null;
+    this._light = null;
+
+    this.needsRedraw = false;
+
+    this.adddedToScene = false;
 }
 
 LightComponent.prototype = Object.create(Component.prototype);
 LightComponent.prototype.constructor = LightComponent;
 
+Object.defineProperty(LightComponent.prototype, 'light', {
+    get: function() {
+        return this._light;
+    },
+    set: function(value) {
+        this._light = value;
+    }
+});
+
 module.exports = LightComponent;
 },{"../component":5}],10:[function(require,module,exports){
-arguments[4][6][0].apply(exports,arguments)
-},{"../component":5,"dup":6,"three":60}],11:[function(require,module,exports){
+var Component = require('../component');
+var THREE = require('three');
+
+var RenderComponent = function() {
+    Component.call(this);
+
+    //sets render object
+    //defaults to empty object 3d
+    this._object = null;
+
+    //wether to perform a redraw in the next frame
+    //used by renderer
+    this.needsUpdate = false;
+
+    //visible
+    this.visible = true;
+
+    //has edges
+    this.hasEdges = false;
+
+    this.adddedToScene = false;
+};
+
+RenderComponent.prototype = Object.create(Component.prototype);
+RenderComponent.prototype.constructor = RenderComponent;
+
+Object.defineProperty(RenderComponent.prototype, 'object', {
+    get: function() {
+        return this._object;
+    },
+
+    set: function(value) {
+        this._object = value;
+        this.needsUpdate = true;
+    }
+});
+
+module.exports = RenderComponent;
+},{"../component":5,"three":60}],11:[function(require,module,exports){
 var Component = require('../component');
 var THREE = require('three');
 
@@ -1363,6 +1413,7 @@ var Lighting = function(renderer) {
 
     this.renderer = renderer;
     this.scene = this.renderer.scene;
+    this.edgeScene = this.renderer.edgeScene;
 
     this.componentPredicate = function(component) {
         return component instanceof LightComponent;
@@ -1376,23 +1427,30 @@ Lighting.prototype.constructor = Lighting;
 
 Lighting.prototype.addLight = function(component) {
     this.scene.add(component.light);
-    this.lightMap[component.id] = component.light;
+    var edgeLight = component.light.clone();
+    this.edgeScene.add(edgeLight);
+    this.lightMap[component.id] = [component.light, edgeLight];
 };
 
 Lighting.prototype.tick = function() {
     for (var id in this.componentMap) {
         var component = this.componentMap[id];
 
-        if (this.lightMap[id] == null && component.light != null) {
-            this.addLight(component);
-        } else if (this.lightMap[id] != component.light) {
-            this.scene.remove(component.light);
-            delete this.lightMap[component.id];
-
-            if (component.light != null) {
-                this.addLight(component);
+        if (!component.addedToScene || component.needsUpdate) {
+            var lights = this.lightMap[id];
+            if (lights == null) {
+                lights = this.lightMap[id] = [];
             }
+
+            lights.forEach(function(light) {
+                light.parent.remove(light);
+            });
+
+            this.addLight(component);
+
+            component.addedToScene = true;
         }
+
     }
 };
 
@@ -1419,7 +1477,6 @@ var Renderer = function(container) {
 
     //object look up, by component id
     this.objectMap = {};
-    this.edgeObjectMap = {};
 
     this.scene = new THREE.Scene();
     this.edgeScene = new THREE.Scene();
@@ -1576,13 +1633,15 @@ Renderer.prototype.tick = function() {
     for (var id in this.componentMap) {
         var renderComponent = this.componentMap[id];
 
-        if (this.objectNeedsUpdate(renderComponent)) {
+        if (renderComponent.needsUpdate || !renderComponent.addedToScene) {
             if (this.objectMap[id] != null) {
                 this.removeObject(renderComponent);
             }
             if (renderComponent.object != null) {
                 this.addObject(renderComponent);
             }
+
+            renderComponent.addedToScene = true;
         }
 
         if (renderComponent.object == null) {
@@ -1597,32 +1656,29 @@ Renderer.prototype.tick = function() {
     }
 };
 
-Renderer.prototype.objectNeedsUpdate = function(renderComponent) {
-    return this.objectMap[renderComponent.id] != renderComponent.object;
-};
-
 Renderer.prototype.addObject = function(renderComponent) {
     var object = renderComponent.object;
     this.scene.add(object);
-    this.objectMap[renderComponent.id] = object;
+    var objects = [object];
 
     if (renderComponent.hasEdges) {
         var edgeObject = object.clone();
-        this.edgeObjectMap[renderComponent.id] = edgeObject;
+        objects.push(edgeObject);
         this.edgeScene.add(edgeObject);
     }
+
+    this.objectMap[renderComponent.id] = objects;
 };
 
 Renderer.prototype.removeObject = function(renderComponent) {
-    var object = this.objectMap[renderComponent.id];
-    this.scene.add(object);
-    delete this.objectMap[renderComponent.id];
-
-    var edgeObject = this.edgeObjectMap[renderComponent.id];
-    if (edgeObject != null) {
-        this.edgeScene.remove(edgeObject);
-        delete this.edgeObjectMap[renderComponent.id];
+    var objects = this.objectMap[renderComponent.id];
+    if (objects == null) {
+        return;
     }
+
+    objects.forEach(function(object) {
+        object.parent.remove(object);
+    });
 };
 
 module.exports = Renderer;
@@ -1872,7 +1928,7 @@ var addLights = function(game) {
     game.addEntity(entity);
 
     var ambient = entity.addComponent(LightComponent);
-    ambient.light = new THREE.AmbientLight(0x333333);
+    ambient.light = new THREE.AmbientLight(0x000000);
 
     var directional = entity.addComponent(LightComponent);
     var directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);

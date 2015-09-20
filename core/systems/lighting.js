@@ -6,6 +6,7 @@ var Lighting = function(renderer) {
 
     this.renderer = renderer;
     this.scene = this.renderer.scene;
+    this.edgeScene = this.renderer.edgeScene;
 
     this.componentPredicate = function(component) {
         return component instanceof LightComponent;
@@ -19,23 +20,30 @@ Lighting.prototype.constructor = Lighting;
 
 Lighting.prototype.addLight = function(component) {
     this.scene.add(component.light);
-    this.lightMap[component.id] = component.light;
+    var edgeLight = component.light.clone();
+    this.edgeScene.add(edgeLight);
+    this.lightMap[component.id] = [component.light, edgeLight];
 };
 
 Lighting.prototype.tick = function() {
     for (var id in this.componentMap) {
         var component = this.componentMap[id];
 
-        if (this.lightMap[id] == null && component.light != null) {
-            this.addLight(component);
-        } else if (this.lightMap[id] != component.light) {
-            this.scene.remove(component.light);
-            delete this.lightMap[component.id];
-
-            if (component.light != null) {
-                this.addLight(component);
+        if (!component.addedToScene || component.needsUpdate) {
+            var lights = this.lightMap[id];
+            if (lights == null) {
+                lights = this.lightMap[id] = [];
             }
+
+            lights.forEach(function(light) {
+                light.parent.remove(light);
+            });
+
+            this.addLight(component);
+
+            component.addedToScene = true;
         }
+
     }
 };
 

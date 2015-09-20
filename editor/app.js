@@ -140,7 +140,7 @@ var addLights = function(game) {
     game.addEntity(entity);
 
     var ambient = entity.addComponent(LightComponent);
-    ambient.light = new THREE.AmbientLight(0x333333);
+    ambient.light = new THREE.AmbientLight(0x000000);
 
     var directional = entity.addComponent(LightComponent);
     var directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
