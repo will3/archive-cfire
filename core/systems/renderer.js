@@ -19,10 +19,8 @@ var Renderer = function(container) {
 
     //object look up, by component id
     this.objectMap = {};
-    this.edgeObjectMap = {};
 
     this.scene = new THREE.Scene();
-    this.edgeScene = new THREE.Scene();
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     this.camera.rotation.order = 'YXZ';
@@ -37,8 +35,6 @@ var Renderer = function(container) {
 
     this.renderer = renderer;
 
-    //composers
-    this.edgeComposer = null;
     this.diffuseComposer = null;
 
     this.depthMaterial = null;
@@ -47,7 +43,6 @@ var Renderer = function(container) {
 
     this.onlyAO = false;
     this.ssao = true;
-    this.edges = true;
     this.postprocessingNeedsUpdate = false;
 
     //set up resize
@@ -72,25 +67,6 @@ Renderer.prototype.onWindowResize = function() {
 };
 
 Renderer.prototype.initPostprocessing = function() {
-    //edge composer
-    this.edgeComposer = new THREE.EffectComposer(this.renderer);
-
-    //render pass
-    var renderPass = new THREE.RenderPass(this.edgeScene, this.camera);
-    this.edgeComposer.addPass(renderPass);
-
-    //edge using canny edge filter
-    var cannyEdge = new THREE.ShaderPass(THREE.CannyEdgeFilterPass);
-    this.edgeComposer.addPass(cannyEdge);
-
-    //invert edge
-    var invert = new THREE.ShaderPass(THREE.InvertThreshholdPass);
-    this.edgeComposer.addPass(invert);
-
-    //copy edges
-    var copyPass = new THREE.ShaderPass(THREE.CopyShader);
-    this.edgeComposer.addPass(copyPass);
-
     // Setup depth pass
     var depthShader = THREE.ShaderLib["depthRGBA"];
     var depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
@@ -129,13 +105,6 @@ Renderer.prototype.initPostprocessing = function() {
         this.diffuseComposer.addPass(ssaoPass);
     }
 
-    if (this.edges) {
-        //blend with edge composer
-        var multiplyPass = new THREE.ShaderPass(THREE.MultiplyBlendShader);
-        multiplyPass.uniforms["tEdge"].value = this.edgeComposer.renderTarget2;
-        this.diffuseComposer.addPass(multiplyPass);
-    }
-
     //copy to scene
     var copyPass = new THREE.ShaderPass(THREE.CopyShader);
     copyPass.renderToScreen = true;
@@ -157,10 +126,6 @@ Renderer.prototype.render = function() {
         this.postprocessingNeedsUpdate = false;
     }
 
-    if (this.edges) {
-        this.edgeComposer.render();
-    }
-
     if (this.ssao) {
         // Render depth into depthRenderTarget
         this.scene.overrideMaterial = this.depthMaterial;
@@ -177,12 +142,8 @@ Renderer.prototype.tick = function() {
         var renderComponent = this.componentMap[id];
 
         if (this.objectNeedsUpdate(renderComponent)) {
-            if (this.objectMap[id] != null) {
-                this.removeObject(renderComponent);
-            }
-            if (renderComponent.object != null) {
-                this.addObject(renderComponent);
-            }
+            this.removeObject(renderComponent);
+            this.addObject(renderComponent);
         }
 
         if (renderComponent.object == null) {
@@ -202,26 +163,20 @@ Renderer.prototype.objectNeedsUpdate = function(renderComponent) {
 };
 
 Renderer.prototype.addObject = function(renderComponent) {
+    if (renderComponent.object == null) {
+        return;
+    }
+
     var object = renderComponent.object;
     this.scene.add(object);
     this.objectMap[renderComponent.id] = object;
-
-    if (renderComponent.hasEdges) {
-        var edgeObject = object.clone();
-        this.edgeObjectMap[renderComponent.id] = edgeObject;
-        this.edgeScene.add(edgeObject);
-    }
 };
 
 Renderer.prototype.removeObject = function(renderComponent) {
     var object = this.objectMap[renderComponent.id];
-    this.scene.add(object);
-    delete this.objectMap[renderComponent.id];
-
-    var edgeObject = this.edgeObjectMap[renderComponent.id];
-    if (edgeObject != null) {
-        this.edgeScene.remove(edgeObject);
-        delete this.edgeObjectMap[renderComponent.id];
+    if (object != null) {
+        this.scene.remove(object);
+        delete this.objectMap[renderComponent.id];
     }
 };
 
