@@ -79,6 +79,11 @@ ChunkController.prototype.reset = function() {
     this.updateObjects();
 };
 
+ChunkController.prototype.setChunk = function(chunk){
+    this.chunk = chunk;
+    this.updateObjects();
+};
+
 ChunkController.prototype.serialize = function() {
     return serialize(this.chunk);
 };

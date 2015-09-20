@@ -13,6 +13,7 @@ var PointerController = require('./pointercontroller');
 
 var AddBlock = require('./commands/addblock');
 var RemoveBlock = require('./commands/removeblock');
+var ResetChunk = require('./commands/resetchunk');
 
 var InputController = function() {
     Component.call(this);
@@ -258,6 +259,8 @@ InputController.prototype.undo = function() {
     lastCommand.undo();
     _.pull(this.commands, lastCommand);
     this.redoCommands.push(lastCommand);
+
+    this.updateUrl();
 };
 
 InputController.prototype.redo = function() {
@@ -269,6 +272,8 @@ InputController.prototype.redo = function() {
     lastCommand.run();
     _.pull(this.redoCommands, lastCommand);
     this.commands.push(lastCommand);
+
+    this.updateUrl();
 };
 
 InputController.prototype.save = function() {
@@ -291,9 +296,12 @@ InputController.prototype.openFile = function(file) {
 };
 
 InputController.prototype.reset = function() {
-    this.chunkController.reset();
-    this.commands = [];
-    this.redoCommands = [];
+    var command = new ResetChunk({
+        chunkController: this.chunkController
+    });
+    this.runCommand(command);
+
+    this.updateUrl();
 };
 
 InputController.prototype.setBlockX = function(value) {
