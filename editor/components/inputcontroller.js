@@ -1,6 +1,7 @@
 var THREE = require('three');
 var assert = require('assert-plus');
 var _ = require('lodash');
+var $ = require('jquery');
 
 var Component = require('../../core/component');
 var InputComponent = require('../../core/components/inputcomponent');
@@ -107,6 +108,25 @@ InputController.prototype.gridPressed = function() {
     this.gridController.gridHidden = !this.gridController.gridHidden;
 };
 
+InputController.prototype.setGridHidden = function(hidden) {
+    this.gridController.gridHidden = hidden;
+};
+
+InputController.prototype.setSsao = function(value) {
+    this.root.renderer.ssao = value;
+    this.root.renderer.postprocessingNeedsUpdate = true;
+};
+
+InputController.prototype.setOnlyao = function(value) {
+    this.root.renderer.onlyAO = value;
+    this.root.renderer.postprocessingNeedsUpdate = true;
+};
+
+InputController.prototype.setEdges = function(value) {
+    this.root.renderer.edges = value;
+    this.root.renderer.postprocessingNeedsUpdate = true;
+};
+
 InputController.prototype.appendInput = function(key) {
     this.inputText += key;
 };
@@ -169,6 +189,7 @@ InputController.prototype.onMouseClick = function() {
         });
 
         this.runCommand(command);
+        this.updateUrl();
     } else {
         var command = new AddBlock({
             chunkController: this.chunkController,
@@ -177,7 +198,14 @@ InputController.prototype.onMouseClick = function() {
         });
 
         this.runCommand(command);
+        this.updateUrl();
     }
+};
+
+InputController.prototype.updateUrl = function() {
+    var json = this.chunkController.serialize();
+    var uri = require('lz-string').compressToEncodedURIComponent(JSON.stringify(json));
+    window.history.pushState("", "", "/edit?b=" + uri);
 };
 
 InputController.prototype.getBlock = function() {
@@ -244,15 +272,11 @@ InputController.prototype.redo = function() {
 };
 
 InputController.prototype.save = function() {
-    var fileName = prompt("choose file name:", "block.cf");
-
-    if (fileName != null) {
-        var json = this.chunkController.serialize();
-        var blob = new Blob([JSON.stringify(json)], {
-            type: "text/plain;charset=utf-8"
-        });
-        require('filesaver.js').saveAs(blob, fileName);
-    }
+    var json = this.chunkController.serialize();
+    var blob = new Blob([JSON.stringify(json)], {
+        type: "text/plain;charset=utf-8"
+    });
+    require('filesaver.js').saveAs(blob, "block.cf");
 };
 
 InputController.prototype.openFile = function(file) {
@@ -290,6 +314,10 @@ InputController.prototype.zoomIn = function() {
 
 InputController.prototype.zoomOut = function() {
     this.cameraController.zoom(1.1);
+};
+
+InputController.prototype.toolPressed = function(toolName) {
+
 };
 
 InputController.prototype.getCoord = function() {

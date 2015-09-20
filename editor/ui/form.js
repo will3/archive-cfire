@@ -4,7 +4,7 @@ var filebutton = require('file-button');
 var THREE = require('three');
 
 var addColorPicker = require('./addcolorpicker');
-var palette = require('./palette');
+var palette = require('../palette');
 
 module.exports = function(params) {
     params = params || {};
@@ -17,6 +17,14 @@ module.exports = function(params) {
     var newButton = $('#new-button');
     var openButton = $('#open-button');
     var saveButton = $('#save-button');
+    var undoButton = $('#undo-button');
+    var redoButton = $('#redo-button');
+    var gridCheckbox = $('#grid-checkbox');
+    var ssaoCheckbox = $('#ssao-checkbox');
+    var onlyaoCheckbox = $('#onlyao-checkbox');
+    var edgesCheckbox = $('#edges-checkbox');
+    var zoomInButton = $('#zoom-in-button');
+    var zoomOutButton = $('#zoom-out-button');
 
     assert.object(blockX[0]);
     assert.object(blockY[0]);
@@ -25,6 +33,12 @@ module.exports = function(params) {
     assert.object(newButton[0]);
     assert.object(openButton[0]);
     assert.object(saveButton[0]);
+    assert.object(undoButton[0]);
+    assert.object(redoButton[0]);
+    assert.object(gridCheckbox[0]);
+    assert.object(ssaoCheckbox[0]);
+    assert.object(onlyaoCheckbox[0]);
+    assert.object(edgesCheckbox[0]);
 
     blockX.bind('input', function() {
         inputController.setBlockX(parseFloat(blockX.val()));
@@ -53,6 +67,42 @@ module.exports = function(params) {
 
     newButton.click(function() {
         inputController.reset();
+    });
+
+    undoButton.click(function() {
+        inputController.undo();
+    });
+
+    redoButton.click(function() {
+        inputController.redo();
+    });
+
+    gridCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setGridHidden(!checked);
+    });
+
+    ssaoCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setSsao(checked);
+    });
+
+    onlyaoCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setOnlyao(checked);
+    });
+
+    edgesCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setEdges(checked);
+    });
+
+    zoomInButton.click(function() {
+        inputController.zoomIn();
+    });
+
+    zoomOutButton.click(function() {
+        inputController.zoomOut();
     });
 
     filebutton

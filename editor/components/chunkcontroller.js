@@ -31,6 +31,8 @@ ChunkController.prototype.start = function() {
     this.collisionBody = this.getComponent(CollisionBody);
     assert.object(this.renderComponent, 'renderComponent');
     assert.object(this.collisionBody, 'collisionBody');
+
+    this.updateObjects();
 };
 
 ChunkController.prototype.addBlock = function(coord, block) {
@@ -83,7 +85,15 @@ ChunkController.prototype.serialize = function() {
 
 ChunkController.prototype.load = function(json) {
     this.chunk = deserialize(json);
-    this.updateObjects();
+};
+
+ChunkController.prototype.loadFromUrl = function() {
+    var data = require('../geturlparameter')('b');
+    if (data == null) {
+        return;
+    }
+    var json = JSON.parse(require('lz-string').decompressFromEncodedURIComponent(data));
+    this.chunk = deserialize(json);
 };
 
 module.exports = ChunkController;

@@ -7,7 +7,8 @@ var Collision = require('./systems/collision');
 var Lighting = require('./systems/lighting');
 var Console = require('./systems/console');
 
-var renderer = new Renderer($('#container'), window);
+var container = $('#container');
+var renderer = new Renderer(container, window);
 
 var inputManager = new InputManager();
 

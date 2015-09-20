@@ -1,31 +1,96 @@
 <script src="/javascripts/edit.js"></script>
-<link rel="stylesheet" type="text/css" href="/stylesheets/spectrum.css">
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+<script>
+	var expandGroup = function(name){
+		editor.expandGroup(name);
+	}
+</script>
 <div id="container" tabindex="1">
-	<form class="menu-form">
-		<div class="form-group">
-			<input type='text' id='color-picker'/>
+	<div class="cf-panel draggable">
+		<div class="cf-section">
+			<input class="cf-header" type="button" onclick="expandGroup('block')" value="Block" name="block"></button>
+			<div id="cf-group-block">
+				<div class="cf-field-group">
+					<label for="color-picker">color</label>
+					<input type='text' id='color-picker'/>
+				</div>
+				<div class="cf-field-group">
+					<label for="block-x">x</label>
+					<input type="number" id="block-x" min="0.1" max="2" step="0.1" value="1">
+				</div>
+				<div class="cf-field-group">
+					<label for="block-y">y</label>
+					<input type="number" id="block-y" min="0.1" max="2" step="0.1" value="1">
+				</div>
+				<div class="cf-field-group">
+					<label for="block-z">z</label>
+					<input type="number" id="block-z" min="0.1" max="2" step="0.1" value="1">
+				</div>
+				<div class="cf-field-group">
+					<input id="scale-reset-button" class="btn btn-default" type="button" value="reset scale">
+				</div>
+			</div>
+		</div>
+		
+		<hr></hr>
+
+		<div class="cf-section">
+			<input class="cf-header" type="button" onclick="expandGroup('file')" value="File" name="file"></button>
+			<div id="cf-group-file">
+				<div class="cf-field-group">
+					<input id="new-button" type="button" value="new">
+				</div>
+				<div class="cf-field-group">
+					<button id="open-button">open</button>
+				</div>
+				<div class="cf-field-group">
+					<input id="save-button" type="button" value="save">
+				</div>
+			</div>
 		</div>
 
-		 <div class="form-group">
-			<label for="block-x">x</label>
-			<input type="number" class="form-control" id="block-x" min="0.1" max="2" step="0.1" value="1">
-			<label for="block-y">y</label>
-			<input type="number" class="form-control" id="block-y" min="0.1" max="2" step="0.1" value="1">
-			<label for="block-z">z</label>
-			<input type="number" class="form-control" id="block-z" min="0.1" max="2" step="0.1" value="1">
+		<hr></hr>
+
+		<div class="cf-section">
+			<input class="cf-header" type="button" onclick="expandGroup('history')" value="History" name="history"></button>
+			<div id="cf-group-history">
+				<div class="cf-field-group">
+					<input id="undo-button" type="button" value="undo">
+				</div>
+				<div class="cf-field-group">
+					<input id="redo-button" type="button" value="redo">
+				</div>
+			</div>
 		</div>
-		<div class="form-group">
-			    <input id="scale-reset-button" class="btn btn-default" type="button" value="reset scale">
+
+		<hr></hr>
+
+		<div class="cf-section">
+			<input class="cf-header" type="button" onclick="expandGroup('render')" value="Render" name="render"></button>
+			<div id="cf-group-render">
+				<div class="cf-field-group">
+					<input id="zoom-in-button" type="button" value="zoom in"></input>
+				</div>
+				<div class="cf-field-group">
+					<input id="zoom-out-button" type="button" value="zoom out"></input>
+				</div>
+				<div class="cf-field-group">
+					<input id="grid-checkbox" type="checkbox" name="grid" value="grid" checked></input>
+					<label for="grid-checkbox">grid</label>
+				</div>
+				<div class="cf-field-group">
+					<input id="ssao-checkbox" type="checkbox" name="ssao" value="ssao" checked></input>
+					<label for="ssao-checkbox">ssao</label>
+				</div>
+				<div class="cf-field-group">
+					<input id="onlyao-checkbox" type="checkbox" name="onlyao" value="onlyao"></input>
+					<label for="onlyao-checkbox">only ao</label>
+				</div>
+				<div class="cf-field-group">
+					<input id="edges-checkbox" type="checkbox" name="edges" value="edges" checked></input>
+					<label for="edges-checkbox">edges</label>
+				</div>
+			</div>
 		</div>
-		<div class="form-group">
-			<input id='new-button' class="btn btn-default" type="button" value="new">
-		</div>
-		<div class="form-group">
-			<button id='open-button' class="btn btn-default">open</button>
-		</div>
-		<div class="form-group">
-			<input id='save-button' class="btn btn-default" type="button" value="save">
-		</div>
-	</form>
+	</div>
 </div>

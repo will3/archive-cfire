@@ -42,6 +42,9 @@ var Renderer = function(container) {
     this.depthRenderTarget = null;
 
     this.onlyAO = false;
+    this.ssao = true;
+    this.edges = true;
+    this.postprocessingNeedsUpdate = false;
 
     //set up resize
     resized(this.onWindowResize.bind(this));
@@ -104,22 +107,26 @@ Renderer.prototype.initPostprocessing = function() {
     var renderPass = new THREE.RenderPass(this.scene, this.camera);
     this.diffuseComposer.addPass(renderPass);
 
-    //ssao
-    var ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
-    //this.uniforms[ "tDiffuse" ].value will be set by ShaderPass
-    ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
-    ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
-    ssaoPass.uniforms['cameraNear'].value = this.camera.near;
-    ssaoPass.uniforms['cameraFar'].value = this.camera.far;
-    ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
-    ssaoPass.uniforms['aoClamp'].value = 0.5;
-    ssaoPass.uniforms['lumInfluence'].value = 1.0;
-    this.diffuseComposer.addPass(ssaoPass);
+    if (this.ssao) {
+        //ssao
+        var ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
+        //this.uniforms[ "tDiffuse" ].value will be set by ShaderPass
+        ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
+        ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
+        ssaoPass.uniforms['cameraNear'].value = this.camera.near;
+        ssaoPass.uniforms['cameraFar'].value = this.camera.far;
+        ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
+        ssaoPass.uniforms['aoClamp'].value = 0.5;
+        ssaoPass.uniforms['lumInfluence'].value = 1.0;
+        this.diffuseComposer.addPass(ssaoPass);
+    }
 
-    //blend with edge composer
-    var multiplyPass = new THREE.ShaderPass(THREE.MultiplyBlendShader);
-    multiplyPass.uniforms["tEdge"].value = this.edgeComposer.renderTarget2;
-    this.diffuseComposer.addPass(multiplyPass);
+    if (this.edges) {
+        //blend with edge composer
+        var multiplyPass = new THREE.ShaderPass(THREE.MultiplyBlendShader);
+        multiplyPass.uniforms["tEdge"].value = this.edgeComposer.renderTarget2;
+        this.diffuseComposer.addPass(multiplyPass);
+    }
 
     //copy to scene
     var copyPass = new THREE.ShaderPass(THREE.CopyShader);
@@ -137,12 +144,22 @@ Renderer.prototype.animate = function() {
 };
 
 Renderer.prototype.render = function() {
-    // Render depth into depthRenderTarget
-    this.scene.overrideMaterial = this.depthMaterial;
-    this.renderer.render(this.scene, this.camera, this.depthRenderTarget, true);
-    this.scene.overrideMaterial = null;
+    if (this.postprocessingNeedsUpdate) {
+        this.initPostprocessing();
+        this.postprocessingNeedsUpdate = false;
+    }
 
-    this.edgeComposer.render();
+    if (this.edges) {
+        this.edgeComposer.render();
+    }
+
+    if (this.ssao) {
+        // Render depth into depthRenderTarget
+        this.scene.overrideMaterial = this.depthMaterial;
+        this.renderer.render(this.scene, this.camera, this.depthRenderTarget, true);
+        this.scene.overrideMaterial = null;
+    }
+
     this.diffuseComposer.render();
     // this.renderer.render(this.scene, this.camera);
 };

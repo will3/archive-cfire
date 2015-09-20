@@ -1,16 +1,28 @@
+_ = require('lodash');
+
 module.exports = function(chunk) {
     var json = {};
 
     json.map = [];
 
+    var blocks = [];
+
+    var data = [];
+    // _.isEqual
     chunk.visit(function(x, y, z, block) {
-        json.map.push({
-            x: x,
-            y: y,
-            z: z,
-            block: block
+        var index = _.findIndex(blocks, function(existing) {
+            return _.isEqual(block, existing);
         });
+
+        if (index == -1) {
+            blocks.push(block);
+            index = blocks.length - 1;
+        }
+
+        data.push([x, y, z, index].join(','));
     });
 
-    return json;
+    data.unshift(blocks);
+
+    return data;
 };

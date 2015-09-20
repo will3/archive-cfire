@@ -1,4 +1,3 @@
-var $ = require('jquery');
 var THREE = require('three');
 
 var runGame = require('../core/rungame');
@@ -41,8 +40,46 @@ window.onload = function() {
 
     var inputController = game.getEntityByName('input').getComponent(InputController);
 
-    require('./form')({
+    var container = $('#container');
+
+    require('./ui/form')({
         inputController: inputController
+    });
+
+    $(function() {
+        $(".draggable").draggable();
+    });
+
+    window["editor"] = {
+        expandGroup: function(name) {
+            var div = $("#cf-group-" + name);
+            var header = $('.cf-header[name="' + name + '"]');
+            if (div.is(':visible')) {
+                div.slideUp();
+                // Other stuff to do on slideUp
+                updateHeader(header, true);
+            } else {
+                div.slideDown();
+                // Other stuff to down on slideDown
+                updateHeader(header, false);
+            }
+        }
+    }
+
+    var updateHeader = function(header, collapse) {
+        var text = header.attr('value');
+        if (text.indexOf('▶') != -1 || text.indexOf('▼') != -1) {
+            text = text.substring(2);
+        }
+
+        var symbol = collapse ? '▶' : '▼';
+        header.attr('value', symbol + ' ' + text);
+    }
+
+    // ▼ ▶
+    var headers = $('.cf-header');
+    headers.each(function() {
+        updateHeader($(this), false);
     });
 };
 
@@ -63,7 +100,8 @@ var addChunk = function(game) {
 
     game.addEntity(entity);
 
-    entity.addComponent(ChunkController);
+    var chunkController = entity.addComponent(ChunkController);
+    chunkController.loadFromUrl();
     var renderComponent = entity.addComponent(RenderComponent);
     renderComponent.hasEdges = true;
     entity.addComponent(CollisionBody);

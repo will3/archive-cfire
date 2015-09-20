@@ -31,6 +31,10 @@ Component.prototype = {
         return getGame().entityManager.getOwningEntity(this.id).transform;
     },
 
+    get root() {
+        return this.getGame();
+    },
+
     getGame: function() {
         return getGame();
     },

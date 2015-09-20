@@ -80,12 +80,23 @@ module.exports = Chunk;
 var Chunk = require('./chunk');
 
 module.exports = function(json) {
-    var map = json.map;
-
     var chunk = new Chunk();
-    for (var i in map) {
-        var item = map[i];
-        chunk.add(parseInt(item.x), parseInt(item.y), parseInt(item.z), item.block);
+
+    var blocks = json[0];
+
+    for (var i in json) {
+        if (i == 0) {
+            continue;
+        }
+
+        var data = json[i];
+        var components = data.split(',');
+        var x = components[0];
+        var y = components[1];
+        var z = components[2];
+        var index = components[3];
+
+        chunk.add(parseInt(x), parseInt(y), parseInt(z), blocks[index]);
     }
 
     return chunk;
@@ -335,24 +346,36 @@ module.exports = function(chunk, params) {
 
     return object;
 };
-},{"lodash":53,"three":56}],4:[function(require,module,exports){
+},{"lodash":55,"three":59}],4:[function(require,module,exports){
+_ = require('lodash');
+
 module.exports = function(chunk) {
     var json = {};
 
     json.map = [];
 
+    var blocks = [];
+
+    var data = [];
+    // _.isEqual
     chunk.visit(function(x, y, z, block) {
-        json.map.push({
-            x: x,
-            y: y,
-            z: z,
-            block: block
+        var index = _.findIndex(blocks, function(existing) {
+            return _.isEqual(block, existing);
         });
+
+        if (index == -1) {
+            blocks.push(block);
+            index = blocks.length - 1;
+        }
+
+        data.push([x, y, z, index].join(','));
     });
 
-    return json;
+    data.unshift(blocks);
+
+    return data;
 };
-},{}],5:[function(require,module,exports){
+},{"lodash":55}],5:[function(require,module,exports){
 var uuid = require('uuid-v4');
 var getGame = require('../core/macros/getgame');
 
@@ -386,6 +409,10 @@ Component.prototype = {
         return getGame().entityManager.getOwningEntity(this.id).transform;
     },
 
+    get root() {
+        return this.getGame();
+    },
+
     getGame: function() {
         return getGame();
     },
@@ -411,7 +438,7 @@ Component.prototype = {
 };
 
 module.exports = Component;
-},{"../core/macros/getgame":16,"uuid-v4":57}],6:[function(require,module,exports){
+},{"../core/macros/getgame":16,"uuid-v4":60}],6:[function(require,module,exports){
 var Component = require('../component');
 var THREE = require('three');
 
@@ -434,7 +461,7 @@ RenderComponent.prototype = Object.create(Component.prototype);
 RenderComponent.prototype.constructor = RenderComponent;
 
 module.exports = RenderComponent;
-},{"../component":5,"three":56}],7:[function(require,module,exports){
+},{"../component":5,"three":59}],7:[function(require,module,exports){
 var Component = require('../component');
 
 var CollisionBody = function() {
@@ -510,7 +537,7 @@ InputComponent.prototype.mouseup = function(func) {
 };
 
 module.exports = InputComponent;
-},{"../component":5,"lodash":53}],9:[function(require,module,exports){
+},{"../component":5,"lodash":55}],9:[function(require,module,exports){
 var Component = require('../component');
 
 var LightComponent = function() {
@@ -550,7 +577,7 @@ RenderComponent.prototype = Object.create(Component.prototype);
 RenderComponent.prototype.constructor = RenderComponent;
 
 module.exports = RenderComponent;
-},{"../component":5,"three":56}],11:[function(require,module,exports){
+},{"../component":5,"three":59}],11:[function(require,module,exports){
 var Component = require('../component');
 var THREE = require('three');
 
@@ -566,7 +593,7 @@ TransformComponent.prototype = Object.create(Component.prototype);
 TransformComponent.prototype.constructor = TransformComponent;
 
 module.exports = TransformComponent;
-},{"../component":5,"three":56}],12:[function(require,module,exports){
+},{"../component":5,"three":59}],12:[function(require,module,exports){
 var uuid = require('uuid-v4');
 var _ = require('lodash');
 
@@ -632,7 +659,7 @@ Entity.prototype = {
 }
 
 module.exports = Entity;
-},{"./components/transformcomponent":11,"./macros/getgame":16,"./macros/types":17,"lodash":53,"uuid-v4":57}],13:[function(require,module,exports){
+},{"./components/transformcomponent":11,"./macros/getgame":16,"./macros/types":17,"lodash":55,"uuid-v4":60}],13:[function(require,module,exports){
 var _ = require('lodash');
 
 var EntityManager = function() {
@@ -783,7 +810,7 @@ EntityManager.prototype = {
 };
 
 module.exports = EntityManager;
-},{"lodash":53}],14:[function(require,module,exports){
+},{"lodash":55}],14:[function(require,module,exports){
 var _ = require('lodash');
 var $ = require('jquery');
 var extend = require('extend');
@@ -900,7 +927,7 @@ Game.prototype = {
 };
 
 module.exports = Game;
-},{"./entitymanager":13,"./inputstate":15,"./macros/getgame":16,"./macros/types":17,"./systems":20,"./systems/collision":21,"./systems/console":22,"./systems/inputmanager":23,"./systems/renderer":25,"extend":45,"jquery":52,"lodash":53}],15:[function(require,module,exports){
+},{"./entitymanager":13,"./inputstate":15,"./macros/getgame":16,"./macros/types":17,"./systems":20,"./systems/collision":21,"./systems/console":22,"./systems/inputmanager":23,"./systems/renderer":25,"extend":47,"jquery":54,"lodash":55}],15:[function(require,module,exports){
 var _ = require('lodash');
 
 var InputState = function() {
@@ -945,7 +972,7 @@ InputState.prototype = {
 }
 
 module.exports = InputState;
-},{"lodash":53}],16:[function(require,module,exports){
+},{"lodash":55}],16:[function(require,module,exports){
 var game = null;
 
 module.exports = function() {
@@ -1051,7 +1078,8 @@ var Collision = require('./systems/collision');
 var Lighting = require('./systems/lighting');
 var Console = require('./systems/console');
 
-var renderer = new Renderer($('#container'), window);
+var container = $('#container');
+var renderer = new Renderer(container, window);
 
 var inputManager = new InputManager();
 
@@ -1064,7 +1092,7 @@ var lighting = new Lighting(renderer);
 var console = new Console();
 
 module.exports = [renderer, inputManager, scriptManager, collision, lighting, console];
-},{"./systems/collision":21,"./systems/console":22,"./systems/inputmanager":23,"./systems/lighting":24,"./systems/renderer":25,"./systems/scriptmanager":26,"jquery":52}],21:[function(require,module,exports){
+},{"./systems/collision":21,"./systems/console":22,"./systems/inputmanager":23,"./systems/lighting":24,"./systems/renderer":25,"./systems/scriptmanager":26,"jquery":54}],21:[function(require,module,exports){
 var _ = require('lodash');
 
 var System = require('../system');
@@ -1114,7 +1142,7 @@ Collision.prototype.tick = function() {
 };
 
 module.exports = Collision;
-},{"../components/collisionbody":7,"../system":19,"../utils/getmouseraycaster":27,"lodash":53}],22:[function(require,module,exports){
+},{"../components/collisionbody":7,"../system":19,"../utils/getmouseraycaster":27,"lodash":55}],22:[function(require,module,exports){
 var _ = require('lodash');
 var $ = require('jquery');
 
@@ -1171,7 +1199,7 @@ Console.prototype.updateLayout = function() {
 };
 
 module.exports = Console;
-},{"../system":19,"jquery":52,"lodash":53}],23:[function(require,module,exports){
+},{"../system":19,"jquery":54,"lodash":55}],23:[function(require,module,exports){
 var $ = require('jquery');
 var _ = require('lodash');
 try {
@@ -1197,17 +1225,16 @@ var InputManager = function(params) {
     params = params || {};
 
     this.inputState = params.inputState || new InputState();
+    this.container = params.container || $('#container');
 
     var self = this;
 
-    var bindMouseFunc = params.bindMouseFunc || function() {
-        $(window).mousemove(self.handleMousemove.bind(self));
-        $(window).mousedown(self.handleMousedown.bind(self));
-        $(window).mouseup(self.handleMouseup.bind(self));
-        $(window).mouseleave(self.handleMouseleave.bind(self));
+    this.bindMouseFunc = params.bindMouseFunc || function() {
+        self.container.mousemove(self.handleMousemove.bind(self));
+        self.container.mousedown(self.handleMousedown.bind(self));
+        self.container.mouseup(self.handleMouseup.bind(self));
+        self.container.mouseleave(self.handleMouseleave.bind(self));
     };
-
-    bindMouseFunc();
 
     this.componentPredicate = function(component) {
         return component instanceof InputComponent;
@@ -1218,6 +1245,12 @@ var InputManager = function(params) {
 
 InputManager.prototype = Object.create(System.prototype);
 InputManager.prototype.constructor = InputManager;
+
+InputManager.prototype.start = function() {
+    this.keyMap = this.getGame().keyMap;
+    this.bindKeyMap();
+    this.bindMouseFunc();
+};
 
 InputManager.prototype.bindKeyMap = function() {
     MouseTrap.reset();
@@ -1300,18 +1333,13 @@ InputManager.prototype.handleMouseleave = function() {
     this.inputState.mousehold = false;
 };
 
-InputManager.prototype.start = function() {
-    this.keyMap = this.getGame().keyMap;
-    this.bindKeyMap();
-};
-
 InputManager.prototype.afterTick = function() {
     //clear temporary control states
     this.inputState.clearTemporaryStates();
 };
 
 module.exports = InputManager;
-},{"../components/inputcomponent":8,"../inputstate":15,"../system":19,"jquery":52,"lodash":53,"mousetrap":54}],24:[function(require,module,exports){
+},{"../components/inputcomponent":8,"../inputstate":15,"../system":19,"jquery":54,"lodash":55,"mousetrap":57}],24:[function(require,module,exports){
 var System = require('../system');
 var LightComponent = require('../components/lightcomponent');
 
@@ -1399,6 +1427,9 @@ var Renderer = function(container) {
     this.depthRenderTarget = null;
 
     this.onlyAO = false;
+    this.ssao = true;
+    this.edges = true;
+    this.postprocessingNeedsUpdate = false;
 
     //set up resize
     resized(this.onWindowResize.bind(this));
@@ -1461,22 +1492,26 @@ Renderer.prototype.initPostprocessing = function() {
     var renderPass = new THREE.RenderPass(this.scene, this.camera);
     this.diffuseComposer.addPass(renderPass);
 
-    //ssao
-    var ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
-    //this.uniforms[ "tDiffuse" ].value will be set by ShaderPass
-    ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
-    ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
-    ssaoPass.uniforms['cameraNear'].value = this.camera.near;
-    ssaoPass.uniforms['cameraFar'].value = this.camera.far;
-    ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
-    ssaoPass.uniforms['aoClamp'].value = 0.5;
-    ssaoPass.uniforms['lumInfluence'].value = 1.0;
-    this.diffuseComposer.addPass(ssaoPass);
+    if (this.ssao) {
+        //ssao
+        var ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
+        //this.uniforms[ "tDiffuse" ].value will be set by ShaderPass
+        ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
+        ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
+        ssaoPass.uniforms['cameraNear'].value = this.camera.near;
+        ssaoPass.uniforms['cameraFar'].value = this.camera.far;
+        ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
+        ssaoPass.uniforms['aoClamp'].value = 0.5;
+        ssaoPass.uniforms['lumInfluence'].value = 1.0;
+        this.diffuseComposer.addPass(ssaoPass);
+    }
 
-    //blend with edge composer
-    var multiplyPass = new THREE.ShaderPass(THREE.MultiplyBlendShader);
-    multiplyPass.uniforms["tEdge"].value = this.edgeComposer.renderTarget2;
-    this.diffuseComposer.addPass(multiplyPass);
+    if (this.edges) {
+        //blend with edge composer
+        var multiplyPass = new THREE.ShaderPass(THREE.MultiplyBlendShader);
+        multiplyPass.uniforms["tEdge"].value = this.edgeComposer.renderTarget2;
+        this.diffuseComposer.addPass(multiplyPass);
+    }
 
     //copy to scene
     var copyPass = new THREE.ShaderPass(THREE.CopyShader);
@@ -1494,12 +1529,22 @@ Renderer.prototype.animate = function() {
 };
 
 Renderer.prototype.render = function() {
-    // Render depth into depthRenderTarget
-    this.scene.overrideMaterial = this.depthMaterial;
-    this.renderer.render(this.scene, this.camera, this.depthRenderTarget, true);
-    this.scene.overrideMaterial = null;
+    if (this.postprocessingNeedsUpdate) {
+        this.initPostprocessing();
+        this.postprocessingNeedsUpdate = false;
+    }
 
-    this.edgeComposer.render();
+    if (this.edges) {
+        this.edgeComposer.render();
+    }
+
+    if (this.ssao) {
+        // Render depth into depthRenderTarget
+        this.scene.overrideMaterial = this.depthMaterial;
+        this.renderer.render(this.scene, this.camera, this.depthRenderTarget, true);
+        this.scene.overrideMaterial = null;
+    }
+
     this.diffuseComposer.render();
     // this.renderer.render(this.scene, this.camera);
 };
@@ -1589,7 +1634,7 @@ Renderer.prototype.removeObject = function(renderComponent) {
 };
 
 module.exports = Renderer;
-},{"../components/collisionbody":7,"../components/rendercomponent":10,"../system":19,"../utils/loadthree":28,"../utils/resized":29,"jquery":52,"three":56}],26:[function(require,module,exports){
+},{"../components/collisionbody":7,"../components/rendercomponent":10,"../system":19,"../utils/loadthree":28,"../utils/resized":29,"jquery":54,"three":59}],26:[function(require,module,exports){
 var System = require('../system');
 
 //script manager manages custom components
@@ -1649,7 +1694,7 @@ module.exports = function() {
 
     return raycaster;
 }
-},{"../macros/getgame":16,"three":56}],28:[function(require,module,exports){
+},{"../macros/getgame":16,"three":59}],28:[function(require,module,exports){
 window['THREE'] = require('three');
 require('../../three/shaders/SSAOShader.js');
 require('../../three/shaders/CopyShader.js');
@@ -1663,7 +1708,7 @@ require('../../three/postprocessing/RenderPass.js');
 require('../../three/postprocessing/ShaderPass.js');
 require('../../three/postprocessing/MaskPass.js');
 require('../../three/postprocessing/EffectComposer.js');
-},{"../../three/postprocessing/EffectComposer.js":58,"../../three/postprocessing/MaskPass.js":59,"../../three/postprocessing/RenderPass.js":60,"../../three/postprocessing/ShaderPass.js":61,"../../three/shaders/CannyEdgeFilterPass.js":62,"../../three/shaders/CopyShader.js":63,"../../three/shaders/FXAAShader.js":64,"../../three/shaders/InvertThreshholdPass.js":65,"../../three/shaders/MedianFilter.js":66,"../../three/shaders/MultiplyBlendShader.js":67,"../../three/shaders/SSAOShader.js":68,"three":56}],29:[function(require,module,exports){
+},{"../../three/postprocessing/EffectComposer.js":61,"../../three/postprocessing/MaskPass.js":62,"../../three/postprocessing/RenderPass.js":63,"../../three/postprocessing/ShaderPass.js":64,"../../three/shaders/CannyEdgeFilterPass.js":65,"../../three/shaders/CopyShader.js":66,"../../three/shaders/FXAAShader.js":67,"../../three/shaders/InvertThreshholdPass.js":68,"../../three/shaders/MedianFilter.js":69,"../../three/shaders/MultiplyBlendShader.js":70,"../../three/shaders/SSAOShader.js":71,"three":59}],29:[function(require,module,exports){
 var $ = require('jquery');
 
 module.exports = function(callback) {
@@ -1687,28 +1732,7 @@ module.exports = function(callback) {
         }
     }
 };
-},{"jquery":52}],30:[function(require,module,exports){
-var extend = require('extend');
-var $ = require('jquery');
-require('spectrum-colorpicker')($);
-
-module.exports = function(params) {
-    params = params || {};
-    var palette = params || [];
-
-    var colorPicker = $('#color-picker');
-    colorPicker.spectrum(extend({
-        showPalette: true,
-        showSelectionPalette: true,
-        palette: [],
-        localStorageKey: "spectrum.homepage",
-        palette: [
-            palette
-        ]
-    }, params));
-};
-},{"extend":45,"jquery":52,"spectrum-colorpicker":55}],31:[function(require,module,exports){
-var $ = require('jquery');
+},{"jquery":54}],30:[function(require,module,exports){
 var THREE = require('three');
 
 var runGame = require('../core/rungame');
@@ -1751,8 +1775,46 @@ window.onload = function() {
 
     var inputController = game.getEntityByName('input').getComponent(InputController);
 
-    require('./form')({
+    var container = $('#container');
+
+    require('./ui/form')({
         inputController: inputController
+    });
+
+    $(function() {
+        $(".draggable").draggable();
+    });
+
+    window["editor"] = {
+        expandGroup: function(name) {
+            var div = $("#cf-group-" + name);
+            var header = $('.cf-header[name="' + name + '"]');
+            if (div.is(':visible')) {
+                div.slideUp();
+                // Other stuff to do on slideUp
+                updateHeader(header, true);
+            } else {
+                div.slideDown();
+                // Other stuff to down on slideDown
+                updateHeader(header, false);
+            }
+        }
+    }
+
+    var updateHeader = function(header, collapse) {
+        var text = header.attr('value');
+        if (text.indexOf('▶') != -1 || text.indexOf('▼') != -1) {
+            text = text.substring(2);
+        }
+
+        var symbol = collapse ? '▶' : '▼';
+        header.attr('value', symbol + ' ' + text);
+    }
+
+    // ▼ ▶
+    var headers = $('.cf-header');
+    headers.each(function() {
+        updateHeader($(this), false);
     });
 };
 
@@ -1773,7 +1835,8 @@ var addChunk = function(game) {
 
     game.addEntity(entity);
 
-    entity.addComponent(ChunkController);
+    var chunkController = entity.addComponent(ChunkController);
+    chunkController.loadFromUrl();
     var renderComponent = entity.addComponent(RenderComponent);
     renderComponent.hasEdges = true;
     entity.addComponent(CollisionBody);
@@ -1815,9 +1878,10 @@ var addLights = function(game) {
     // directionalLight.position.set(0.2, 0.5, 0.4);
     // directional.light = directionalLight;
 };
-},{"../core/components/collisionbody":7,"../core/components/inputcomponent":8,"../core/components/lightcomponent":9,"../core/components/rendercomponent":10,"../core/entity":12,"../core/game":14,"../core/rungame":18,"./components/cameracontroller":32,"./components/chunkcontroller":33,"./components/gridcontroller":36,"./components/inputcontroller":37,"./components/pointercontroller":38,"./form":41,"./keymap":42,"./palette":43,"jquery":52,"three":56}],32:[function(require,module,exports){
+},{"../core/components/collisionbody":7,"../core/components/inputcomponent":8,"../core/components/lightcomponent":9,"../core/components/rendercomponent":10,"../core/entity":12,"../core/game":14,"../core/rungame":18,"./components/cameracontroller":31,"./components/chunkcontroller":32,"./components/gridcontroller":35,"./components/inputcontroller":36,"./components/pointercontroller":37,"./keymap":41,"./palette":42,"./ui/form":44,"three":59}],31:[function(require,module,exports){
 var THREE = require('three');
 var Component = require('../../core/component');
+var clamp = require('clamp');
 
 var CameraController = function() {
     Component.call(this);
@@ -1828,6 +1892,9 @@ var CameraController = function() {
 
     this.rotation.x = -Math.PI / 4.0;
     this.rotation.y = Math.PI / 4.0;
+
+    this.maxPitch = Math.PI / 2.0;
+    this.minPitch = -Math.PI / 2.0;
 };
 
 CameraController.prototype = Object.create(Component.prototype);
@@ -1836,6 +1903,8 @@ CameraController.prototype.constructor = CameraController;
 CameraController.prototype.rotateCamera = function(amount) {
     this.rotation.y -= amount.x;
     this.rotation.x -= amount.y;
+
+    this.rotation.x = clamp(this.rotation.x, this.minPitch, this.maxPitch);
 
     this.updatePosition();
 };
@@ -1856,7 +1925,7 @@ CameraController.prototype.updatePosition = function() {
 };
 
 module.exports = CameraController;
-},{"../../core/component":5,"three":56}],33:[function(require,module,exports){
+},{"../../core/component":5,"clamp":46,"three":59}],32:[function(require,module,exports){
 var assert = require('assert-plus');
 var THREE = require('three');
 
@@ -1890,6 +1959,8 @@ ChunkController.prototype.start = function() {
     this.collisionBody = this.getComponent(CollisionBody);
     assert.object(this.renderComponent, 'renderComponent');
     assert.object(this.collisionBody, 'collisionBody');
+
+    this.updateObjects();
 };
 
 ChunkController.prototype.addBlock = function(coord, block) {
@@ -1942,11 +2013,19 @@ ChunkController.prototype.serialize = function() {
 
 ChunkController.prototype.load = function(json) {
     this.chunk = deserialize(json);
-    this.updateObjects();
+};
+
+ChunkController.prototype.loadFromUrl = function() {
+    var data = require('../geturlparameter')('b');
+    if (data == null) {
+        return;
+    }
+    var json = JSON.parse(require('lz-string').decompressFromEncodedURIComponent(data));
+    this.chunk = deserialize(json);
 };
 
 module.exports = ChunkController;
-},{"../../core/block/chunk":1,"../../core/block/deserialize":2,"../../core/block/mesh":3,"../../core/block/serialize":4,"../../core/component":5,"../../core/components/collisionbody":7,"../../core/components/rendercomponent":10,"assert-plus":44,"three":56}],34:[function(require,module,exports){
+},{"../../core/block/chunk":1,"../../core/block/deserialize":2,"../../core/block/mesh":3,"../../core/block/serialize":4,"../../core/component":5,"../../core/components/collisionbody":7,"../../core/components/rendercomponent":10,"../geturlparameter":40,"assert-plus":45,"lz-string":56,"three":59}],33:[function(require,module,exports){
 var extend = require('extend');
 
 var AddBlock = function(params) {
@@ -1972,7 +2051,7 @@ AddBlock.prototype = {
 };
 
 module.exports = AddBlock;
-},{"extend":45}],35:[function(require,module,exports){
+},{"extend":47}],34:[function(require,module,exports){
 var extend = require('extend');
 var _ = require('lodash');
 
@@ -2002,7 +2081,7 @@ RemoveBlock.prototype = {
 }
 
 module.exports = RemoveBlock;
-},{"extend":45,"lodash":53}],36:[function(require,module,exports){
+},{"extend":47,"lodash":55}],35:[function(require,module,exports){
 var THREE = require('three');
 var _ = require('lodash');
 var assert = require('assert-plus');
@@ -2058,10 +2137,11 @@ GridController.prototype.getY = function() {
 };
 
 module.exports = GridController;
-},{"../../core/component":5,"../../core/components/collisionbody":7,"../../core/components/rendercomponent":10,"./utils/getgrid":39,"./utils/plane":40,"assert-plus":44,"lodash":53,"three":56}],37:[function(require,module,exports){
+},{"../../core/component":5,"../../core/components/collisionbody":7,"../../core/components/rendercomponent":10,"./utils/getgrid":38,"./utils/plane":39,"assert-plus":45,"lodash":55,"three":59}],36:[function(require,module,exports){
 var THREE = require('three');
 var assert = require('assert-plus');
 var _ = require('lodash');
+var $ = require('jquery');
 
 var Component = require('../../core/component');
 var InputComponent = require('../../core/components/inputcomponent');
@@ -2168,6 +2248,25 @@ InputController.prototype.gridPressed = function() {
     this.gridController.gridHidden = !this.gridController.gridHidden;
 };
 
+InputController.prototype.setGridHidden = function(hidden) {
+    this.gridController.gridHidden = hidden;
+};
+
+InputController.prototype.setSsao = function(value) {
+    this.root.renderer.ssao = value;
+    this.root.renderer.postprocessingNeedsUpdate = true;
+};
+
+InputController.prototype.setOnlyao = function(value) {
+    this.root.renderer.onlyAO = value;
+    this.root.renderer.postprocessingNeedsUpdate = true;
+};
+
+InputController.prototype.setEdges = function(value) {
+    this.root.renderer.edges = value;
+    this.root.renderer.postprocessingNeedsUpdate = true;
+};
+
 InputController.prototype.appendInput = function(key) {
     this.inputText += key;
 };
@@ -2230,6 +2329,7 @@ InputController.prototype.onMouseClick = function() {
         });
 
         this.runCommand(command);
+        this.updateUrl();
     } else {
         var command = new AddBlock({
             chunkController: this.chunkController,
@@ -2238,7 +2338,14 @@ InputController.prototype.onMouseClick = function() {
         });
 
         this.runCommand(command);
+        this.updateUrl();
     }
+};
+
+InputController.prototype.updateUrl = function() {
+    var json = this.chunkController.serialize();
+    var uri = require('lz-string').compressToEncodedURIComponent(JSON.stringify(json));
+    window.history.pushState("", "", "/edit?b=" + uri);
 };
 
 InputController.prototype.getBlock = function() {
@@ -2305,15 +2412,11 @@ InputController.prototype.redo = function() {
 };
 
 InputController.prototype.save = function() {
-    var fileName = prompt("choose file name:", "block.cf");
-
-    if (fileName != null) {
-        var json = this.chunkController.serialize();
-        var blob = new Blob([JSON.stringify(json)], {
-            type: "text/plain;charset=utf-8"
-        });
-        require('filesaver.js').saveAs(blob, fileName);
-    }
+    var json = this.chunkController.serialize();
+    var blob = new Blob([JSON.stringify(json)], {
+        type: "text/plain;charset=utf-8"
+    });
+    require('filesaver.js').saveAs(blob, "block.cf");
 };
 
 InputController.prototype.openFile = function(file) {
@@ -2351,6 +2454,10 @@ InputController.prototype.zoomIn = function() {
 
 InputController.prototype.zoomOut = function() {
     this.cameraController.zoom(1.1);
+};
+
+InputController.prototype.toolPressed = function(toolName) {
+
 };
 
 InputController.prototype.getCoord = function() {
@@ -2430,7 +2537,7 @@ InputController.prototype.getChunkCoord = function() {
 };
 
 module.exports = InputController;
-},{"../../core/component":5,"../../core/components/inputcomponent":8,"./cameracontroller":32,"./chunkcontroller":33,"./commands/addblock":34,"./commands/removeblock":35,"./gridcontroller":36,"./pointercontroller":38,"assert-plus":44,"filesaver.js":51,"lodash":53,"three":56}],38:[function(require,module,exports){
+},{"../../core/component":5,"../../core/components/inputcomponent":8,"./cameracontroller":31,"./chunkcontroller":32,"./commands/addblock":33,"./commands/removeblock":34,"./gridcontroller":35,"./pointercontroller":37,"assert-plus":45,"filesaver.js":53,"jquery":54,"lodash":55,"lz-string":56,"three":59}],37:[function(require,module,exports){
 var Component = require('../../core/component');
 var RenderComponent = require('../../core/components/RenderComponent');
 var assert = require('assert-plus');
@@ -2480,7 +2587,7 @@ PointerController.prototype.makeCube = function() {
 };
 
 module.exports = PointerController;
-},{"../../core/component":5,"../../core/components/RenderComponent":6,"assert-plus":44,"three":56}],39:[function(require,module,exports){
+},{"../../core/component":5,"../../core/components/RenderComponent":6,"assert-plus":45,"three":59}],38:[function(require,module,exports){
 var _ = require('lodash');
 var THREE = require('three');
 
@@ -2515,7 +2622,7 @@ var getGrid = function(chunk, gridY, gridSize) {
 }
 
 module.exports = getGrid;
-},{"lodash":53,"three":56}],40:[function(require,module,exports){
+},{"lodash":55,"three":59}],39:[function(require,module,exports){
 var THREE = require('three');
 
 module.exports = function(size, y){
@@ -2535,14 +2642,86 @@ module.exports = function(size, y){
 
     return new THREE.Mesh(geometry, material);
 };
-},{"three":56}],41:[function(require,module,exports){
+},{"three":59}],40:[function(require,module,exports){
+var getUrlParameter = function getUrlParameter(sParam) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+        sURLVariables = sPageURL.split('&'),
+        sParameterName,
+        i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return sParameterName[1] === undefined ? true : sParameterName[1];
+        }
+    }
+};
+
+module.exports = getUrlParameter;
+},{}],41:[function(require,module,exports){
+module.exports = {
+    'up': 'up',
+    'down': 'down',
+    'remove': 'shift',
+    'grid': 'g',
+    '0': '0',
+    '1': '1',
+    '2': '2',
+    '3': '3',
+    '4': '4',
+    '5': '5',
+    '6': '6',
+    '7': '7',
+    '8': '8',
+    '9': '9',
+    '0': '0',
+    '.': '.',
+    '-': '-',
+    'enter': 'enter',
+    'block': 'b',
+    'undo': ['ctrl+z', 'command+z'],
+    'redo': ['ctrl+shift+z', 'command+shift+z'],
+    'save': ['ctrl+s', 'command+s'],
+    'zoomin': ['ctrl+=', 'command+='],
+    'zoomout': ['ctrl+-', 'command+-']
+}
+},{}],42:[function(require,module,exports){
+module.exports = [
+    'rgb(60, 56, 53)',
+    'rgb(88, 76, 64)',
+    'rgb(88, 122, 110)',
+    'rgb(253, 234, 191)',
+    'rgb(237, 231, 213)'
+];
+},{}],43:[function(require,module,exports){
+var extend = require('extend');
+var $ = require('jquery');
+require('spectrum-colorpicker')($);
+
+module.exports = function(params) {
+    params = params || {};
+    var palette = params || [];
+
+    var colorPicker = $('#color-picker');
+    colorPicker.spectrum(extend({
+        showPalette: true,
+        showSelectionPalette: true,
+        palette: [],
+        localStorageKey: "spectrum.homepage",
+        palette: [
+            palette
+        ]
+    }, params));
+};
+},{"extend":47,"jquery":54,"spectrum-colorpicker":58}],44:[function(require,module,exports){
 var $ = require('jquery');
 var assert = require('assert-plus');
 var filebutton = require('file-button');
 var THREE = require('three');
 
 var addColorPicker = require('./addcolorpicker');
-var palette = require('./palette');
+var palette = require('../palette');
 
 module.exports = function(params) {
     params = params || {};
@@ -2555,6 +2734,14 @@ module.exports = function(params) {
     var newButton = $('#new-button');
     var openButton = $('#open-button');
     var saveButton = $('#save-button');
+    var undoButton = $('#undo-button');
+    var redoButton = $('#redo-button');
+    var gridCheckbox = $('#grid-checkbox');
+    var ssaoCheckbox = $('#ssao-checkbox');
+    var onlyaoCheckbox = $('#onlyao-checkbox');
+    var edgesCheckbox = $('#edges-checkbox');
+    var zoomInButton = $('#zoom-in-button');
+    var zoomOutButton = $('#zoom-out-button');
 
     assert.object(blockX[0]);
     assert.object(blockY[0]);
@@ -2563,6 +2750,12 @@ module.exports = function(params) {
     assert.object(newButton[0]);
     assert.object(openButton[0]);
     assert.object(saveButton[0]);
+    assert.object(undoButton[0]);
+    assert.object(redoButton[0]);
+    assert.object(gridCheckbox[0]);
+    assert.object(ssaoCheckbox[0]);
+    assert.object(onlyaoCheckbox[0]);
+    assert.object(edgesCheckbox[0]);
 
     blockX.bind('input', function() {
         inputController.setBlockX(parseFloat(blockX.val()));
@@ -2593,6 +2786,42 @@ module.exports = function(params) {
         inputController.reset();
     });
 
+    undoButton.click(function() {
+        inputController.undo();
+    });
+
+    redoButton.click(function() {
+        inputController.redo();
+    });
+
+    gridCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setGridHidden(!checked);
+    });
+
+    ssaoCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setSsao(checked);
+    });
+
+    onlyaoCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setOnlyao(checked);
+    });
+
+    edgesCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setEdges(checked);
+    });
+
+    zoomInButton.click(function() {
+        inputController.zoomIn();
+    });
+
+    zoomOutButton.click(function() {
+        inputController.zoomOut();
+    });
+
     filebutton
         .create({
             multiple: false,
@@ -2617,42 +2846,7 @@ module.exports = function(params) {
         palette: palette
     });
 };
-},{"./addcolorpicker":30,"./palette":43,"assert-plus":44,"file-button":46,"jquery":52,"three":56}],42:[function(require,module,exports){
-module.exports = {
-    'up': 'up',
-    'down': 'down',
-    'remove': 'shift',
-    'grid': 'g',
-    '0': '0',
-    '1': '1',
-    '2': '2',
-    '3': '3',
-    '4': '4',
-    '5': '5',
-    '6': '6',
-    '7': '7',
-    '8': '8',
-    '9': '9',
-    '0': '0',
-    '.': '.',
-    '-': '-',
-    'enter': 'enter',
-    'block': 'b',
-    'undo': ['ctrl+z', 'command+z'],
-    'redo': ['ctrl+shift+z', 'command+shift+z'],
-    'save': ['ctrl+s', 'command+s'],
-    'zoomin': ['ctrl+=', 'command+='],
-    'zoomout': ['ctrl+-', 'command+-']
-}
-},{}],43:[function(require,module,exports){
-module.exports = [
-    'rgb(60, 56, 53)',
-    'rgb(88, 76, 64)',
-    'rgb(88, 122, 110)',
-    'rgb(253, 234, 191)',
-    'rgb(237, 231, 213)'
-];
-},{}],44:[function(require,module,exports){
+},{"../palette":42,"./addcolorpicker":43,"assert-plus":45,"file-button":48,"jquery":54,"three":59}],45:[function(require,module,exports){
 (function (process,Buffer){
 // Copyright (c) 2012, Mark Cavage. All rights reserved.
 
@@ -2901,7 +3095,16 @@ Object.keys(assert).forEach(function (k) {
 });
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":78,"assert":69,"buffer":71,"stream":92,"util":95}],45:[function(require,module,exports){
+},{"_process":81,"assert":72,"buffer":74,"stream":95,"util":98}],46:[function(require,module,exports){
+module.exports = clamp
+
+function clamp(value, min, max) {
+  return min < max
+    ? (value < min ? min : value > max ? max : value)
+    : (value < max ? max : value > min ? min : value)
+}
+
+},{}],47:[function(require,module,exports){
 'use strict';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -2989,11 +3192,11 @@ module.exports = function extend() {
 };
 
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 'use strict';
 
 module.exports = require('./lib');
-},{"./lib":47}],47:[function(require,module,exports){
+},{"./lib":49}],49:[function(require,module,exports){
 'use strict';
 
 var Emitter = require('component-emitter');
@@ -3113,7 +3316,7 @@ var onFileChange = function() {
   this.emit('fileinput', fileinput);
   this._render();
 };
-},{"./utils":49,"component-emitter":50}],48:[function(require,module,exports){
+},{"./utils":51,"component-emitter":52}],50:[function(require,module,exports){
 'use strict';
 
 /**
@@ -3151,7 +3354,7 @@ exports.multipleFiles = function(){
   return support;
 };
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 'use strict';
 
 /**
@@ -3281,7 +3484,7 @@ exports.fileinput = function(options) {
 
   return input;
 };
-},{"./support":48}],50:[function(require,module,exports){
+},{"./support":50}],52:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -3444,7 +3647,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 /* FileSaver.js
  * A saveAs() FileSaver implementation.
  * 1.1.20150716
@@ -3702,7 +3905,7 @@ if (typeof module !== "undefined" && module.exports) {
   });
 }
 
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -12914,7 +13117,7 @@ return jQuery;
 
 }));
 
-},{}],53:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -25269,7 +25472,510 @@ return jQuery;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
+// Copyright (c) 2013 Pieroxy <pieroxy@pieroxy.net>
+// This work is free. You can redistribute it and/or modify it
+// under the terms of the WTFPL, Version 2
+// For more information see LICENSE.txt or http://www.wtfpl.net/
+//
+// For more information, the home page:
+// http://pieroxy.net/blog/pages/lz-string/testing.html
+//
+// LZ-based compression algorithm, version 1.4.4
+var LZString = (function() {
+
+// private property
+var f = String.fromCharCode;
+var keyStrBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+var keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+var baseReverseDic = {};
+
+function getBaseValue(alphabet, character) {
+  if (!baseReverseDic[alphabet]) {
+    baseReverseDic[alphabet] = {};
+    for (var i=0 ; i<alphabet.length ; i++) {
+      baseReverseDic[alphabet][alphabet.charAt(i)] = i;
+    }
+  }
+  return baseReverseDic[alphabet][character];
+}
+
+var LZString = {
+  compressToBase64 : function (input) {
+    if (input == null) return "";
+    var res = LZString._compress(input, 6, function(a){return keyStrBase64.charAt(a);});
+    switch (res.length % 4) { // To produce valid Base64
+    default: // When could this happen ?
+    case 0 : return res;
+    case 1 : return res+"===";
+    case 2 : return res+"==";
+    case 3 : return res+"=";
+    }
+  },
+
+  decompressFromBase64 : function (input) {
+    if (input == null) return "";
+    if (input == "") return null;
+    return LZString._decompress(input.length, 32, function(index) { return getBaseValue(keyStrBase64, input.charAt(index)); });
+  },
+
+  compressToUTF16 : function (input) {
+    if (input == null) return "";
+    return LZString._compress(input, 15, function(a){return f(a+32);}) + " ";
+  },
+
+  decompressFromUTF16: function (compressed) {
+    if (compressed == null) return "";
+    if (compressed == "") return null;
+    return LZString._decompress(compressed.length, 16384, function(index) { return compressed.charCodeAt(index) - 32; });
+  },
+
+  //compress into uint8array (UCS-2 big endian format)
+  compressToUint8Array: function (uncompressed) {
+    var compressed = LZString.compress(uncompressed);
+    var buf=new Uint8Array(compressed.length*2); // 2 bytes per character
+
+    for (var i=0, TotalLen=compressed.length; i<TotalLen; i++) {
+      var current_value = compressed.charCodeAt(i);
+      buf[i*2] = current_value >>> 8;
+      buf[i*2+1] = current_value % 256;
+    }
+    return buf;
+  },
+
+  //decompress from uint8array (UCS-2 big endian format)
+  decompressFromUint8Array:function (compressed) {
+    if (compressed===null || compressed===undefined){
+        return LZString.decompress(compressed);
+    } else {
+        var buf=new Array(compressed.length/2); // 2 bytes per character
+        for (var i=0, TotalLen=buf.length; i<TotalLen; i++) {
+          buf[i]=compressed[i*2]*256+compressed[i*2+1];
+        }
+
+        var result = [];
+        buf.forEach(function (c) {
+          result.push(f(c));
+        });
+        return LZString.decompress(result.join(''));
+
+    }
+
+  },
+
+
+  //compress into a string that is already URI encoded
+  compressToEncodedURIComponent: function (input) {
+    if (input == null) return "";
+    return LZString._compress(input, 6, function(a){return keyStrUriSafe.charAt(a);});
+  },
+
+  //decompress from an output of compressToEncodedURIComponent
+  decompressFromEncodedURIComponent:function (input) {
+    if (input == null) return "";
+    if (input == "") return null;
+    input = input.replace(/ /g, "+");
+    return LZString._decompress(input.length, 32, function(index) { return getBaseValue(keyStrUriSafe, input.charAt(index)); });
+  },
+
+  compress: function (uncompressed) {
+    return LZString._compress(uncompressed, 16, function(a){return f(a);});
+  },
+  _compress: function (uncompressed, bitsPerChar, getCharFromInt) {
+    if (uncompressed == null) return "";
+    var i, value,
+        context_dictionary= {},
+        context_dictionaryToCreate= {},
+        context_c="",
+        context_wc="",
+        context_w="",
+        context_enlargeIn= 2, // Compensate for the first entry which should not count
+        context_dictSize= 3,
+        context_numBits= 2,
+        context_data=[],
+        context_data_val=0,
+        context_data_position=0,
+        ii;
+
+    for (ii = 0; ii < uncompressed.length; ii += 1) {
+      context_c = uncompressed.charAt(ii);
+      if (!Object.prototype.hasOwnProperty.call(context_dictionary,context_c)) {
+        context_dictionary[context_c] = context_dictSize++;
+        context_dictionaryToCreate[context_c] = true;
+      }
+
+      context_wc = context_w + context_c;
+      if (Object.prototype.hasOwnProperty.call(context_dictionary,context_wc)) {
+        context_w = context_wc;
+      } else {
+        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate,context_w)) {
+          if (context_w.charCodeAt(0)<256) {
+            for (i=0 ; i<context_numBits ; i++) {
+              context_data_val = (context_data_val << 1);
+              if (context_data_position == bitsPerChar-1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+            }
+            value = context_w.charCodeAt(0);
+            for (i=0 ; i<8 ; i++) {
+              context_data_val = (context_data_val << 1) | (value&1);
+              if (context_data_position == bitsPerChar-1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          } else {
+            value = 1;
+            for (i=0 ; i<context_numBits ; i++) {
+              context_data_val = (context_data_val << 1) | value;
+              if (context_data_position ==bitsPerChar-1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = 0;
+            }
+            value = context_w.charCodeAt(0);
+            for (i=0 ; i<16 ; i++) {
+              context_data_val = (context_data_val << 1) | (value&1);
+              if (context_data_position == bitsPerChar-1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          }
+          context_enlargeIn--;
+          if (context_enlargeIn == 0) {
+            context_enlargeIn = Math.pow(2, context_numBits);
+            context_numBits++;
+          }
+          delete context_dictionaryToCreate[context_w];
+        } else {
+          value = context_dictionary[context_w];
+          for (i=0 ; i<context_numBits ; i++) {
+            context_data_val = (context_data_val << 1) | (value&1);
+            if (context_data_position == bitsPerChar-1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+
+
+        }
+        context_enlargeIn--;
+        if (context_enlargeIn == 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+        // Add wc to the dictionary.
+        context_dictionary[context_wc] = context_dictSize++;
+        context_w = String(context_c);
+      }
+    }
+
+    // Output the code for w.
+    if (context_w !== "") {
+      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate,context_w)) {
+        if (context_w.charCodeAt(0)<256) {
+          for (i=0 ; i<context_numBits ; i++) {
+            context_data_val = (context_data_val << 1);
+            if (context_data_position == bitsPerChar-1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+          }
+          value = context_w.charCodeAt(0);
+          for (i=0 ; i<8 ; i++) {
+            context_data_val = (context_data_val << 1) | (value&1);
+            if (context_data_position == bitsPerChar-1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        } else {
+          value = 1;
+          for (i=0 ; i<context_numBits ; i++) {
+            context_data_val = (context_data_val << 1) | value;
+            if (context_data_position == bitsPerChar-1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = 0;
+          }
+          value = context_w.charCodeAt(0);
+          for (i=0 ; i<16 ; i++) {
+            context_data_val = (context_data_val << 1) | (value&1);
+            if (context_data_position == bitsPerChar-1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        }
+        context_enlargeIn--;
+        if (context_enlargeIn == 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+        delete context_dictionaryToCreate[context_w];
+      } else {
+        value = context_dictionary[context_w];
+        for (i=0 ; i<context_numBits ; i++) {
+          context_data_val = (context_data_val << 1) | (value&1);
+          if (context_data_position == bitsPerChar-1) {
+            context_data_position = 0;
+            context_data.push(getCharFromInt(context_data_val));
+            context_data_val = 0;
+          } else {
+            context_data_position++;
+          }
+          value = value >> 1;
+        }
+
+
+      }
+      context_enlargeIn--;
+      if (context_enlargeIn == 0) {
+        context_enlargeIn = Math.pow(2, context_numBits);
+        context_numBits++;
+      }
+    }
+
+    // Mark the end of the stream
+    value = 2;
+    for (i=0 ; i<context_numBits ; i++) {
+      context_data_val = (context_data_val << 1) | (value&1);
+      if (context_data_position == bitsPerChar-1) {
+        context_data_position = 0;
+        context_data.push(getCharFromInt(context_data_val));
+        context_data_val = 0;
+      } else {
+        context_data_position++;
+      }
+      value = value >> 1;
+    }
+
+    // Flush the last char
+    while (true) {
+      context_data_val = (context_data_val << 1);
+      if (context_data_position == bitsPerChar-1) {
+        context_data.push(getCharFromInt(context_data_val));
+        break;
+      }
+      else context_data_position++;
+    }
+    return context_data.join('');
+  },
+
+  decompress: function (compressed) {
+    if (compressed == null) return "";
+    if (compressed == "") return null;
+    return LZString._decompress(compressed.length, 32768, function(index) { return compressed.charCodeAt(index); });
+  },
+
+  _decompress: function (length, resetValue, getNextValue) {
+    var dictionary = [],
+        next,
+        enlargeIn = 4,
+        dictSize = 4,
+        numBits = 3,
+        entry = "",
+        result = [],
+        i,
+        w,
+        bits, resb, maxpower, power,
+        c,
+        data = {val:getNextValue(0), position:resetValue, index:1};
+
+    for (i = 0; i < 3; i += 1) {
+      dictionary[i] = i;
+    }
+
+    bits = 0;
+    maxpower = Math.pow(2,2);
+    power=1;
+    while (power!=maxpower) {
+      resb = data.val & data.position;
+      data.position >>= 1;
+      if (data.position == 0) {
+        data.position = resetValue;
+        data.val = getNextValue(data.index++);
+      }
+      bits |= (resb>0 ? 1 : 0) * power;
+      power <<= 1;
+    }
+
+    switch (next = bits) {
+      case 0:
+          bits = 0;
+          maxpower = Math.pow(2,8);
+          power=1;
+          while (power!=maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position == 0) {
+              data.position = resetValue;
+              data.val = getNextValue(data.index++);
+            }
+            bits |= (resb>0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+        c = f(bits);
+        break;
+      case 1:
+          bits = 0;
+          maxpower = Math.pow(2,16);
+          power=1;
+          while (power!=maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position == 0) {
+              data.position = resetValue;
+              data.val = getNextValue(data.index++);
+            }
+            bits |= (resb>0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+        c = f(bits);
+        break;
+      case 2:
+        return "";
+    }
+    dictionary[3] = c;
+    w = c;
+    result.push(c);
+    while (true) {
+      if (data.index > length) {
+        return "";
+      }
+
+      bits = 0;
+      maxpower = Math.pow(2,numBits);
+      power=1;
+      while (power!=maxpower) {
+        resb = data.val & data.position;
+        data.position >>= 1;
+        if (data.position == 0) {
+          data.position = resetValue;
+          data.val = getNextValue(data.index++);
+        }
+        bits |= (resb>0 ? 1 : 0) * power;
+        power <<= 1;
+      }
+
+      switch (c = bits) {
+        case 0:
+          bits = 0;
+          maxpower = Math.pow(2,8);
+          power=1;
+          while (power!=maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position == 0) {
+              data.position = resetValue;
+              data.val = getNextValue(data.index++);
+            }
+            bits |= (resb>0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+
+          dictionary[dictSize++] = f(bits);
+          c = dictSize-1;
+          enlargeIn--;
+          break;
+        case 1:
+          bits = 0;
+          maxpower = Math.pow(2,16);
+          power=1;
+          while (power!=maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position == 0) {
+              data.position = resetValue;
+              data.val = getNextValue(data.index++);
+            }
+            bits |= (resb>0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+          dictionary[dictSize++] = f(bits);
+          c = dictSize-1;
+          enlargeIn--;
+          break;
+        case 2:
+          return result.join('');
+      }
+
+      if (enlargeIn == 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+
+      if (dictionary[c]) {
+        entry = dictionary[c];
+      } else {
+        if (c === dictSize) {
+          entry = w + w.charAt(0);
+        } else {
+          return null;
+        }
+      }
+      result.push(entry);
+
+      // Add w+entry[0] to the dictionary.
+      dictionary[dictSize++] = w + entry.charAt(0);
+      enlargeIn--;
+
+      w = entry;
+
+      if (enlargeIn == 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+
+    }
+  }
+};
+  return LZString;
+})();
+
+if (typeof define === 'function' && define.amd) {
+  define(function () { return LZString; });
+} else if( typeof module !== 'undefined' && module != null ) {
+  module.exports = LZString
+}
+
+},{}],57:[function(require,module,exports){
 /*global define:false */
 /**
  * Copyright 2015 Craig Campbell
@@ -26292,7 +26998,7 @@ return jQuery;
     }
 }) (window, document);
 
-},{}],55:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 // Spectrum Colorpicker v1.7.1
 // https://github.com/bgrins/spectrum
 // Author: Brian Grinstead
@@ -28611,7 +29317,7 @@ return jQuery;
 
 });
 
-},{}],56:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 var self = self || {};// File:src/Three.js
 
 /**
@@ -63759,7 +64465,7 @@ if (typeof exports !== 'undefined') {
   this['THREE'] = THREE;
 }
 
-},{}],57:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 
 exports = module.exports = function() {
 	var ret = '', value;
@@ -63789,7 +64495,7 @@ exports.random = function() {
 };
 
 
-},{}],58:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  */
@@ -63928,7 +64634,7 @@ THREE.EffectComposer.prototype = {
 
 };
 
-},{}],59:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  */
@@ -64016,7 +64722,7 @@ THREE.ClearMaskPass.prototype = {
 
 };
 
-},{}],60:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  */
@@ -64069,7 +64775,7 @@ THREE.RenderPass.prototype = {
 
 };
 
-},{}],61:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  */
@@ -64130,7 +64836,7 @@ THREE.ShaderPass.prototype = {
 
 };
 
-},{}],62:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 /* Written by Arefin Mohiuddin - graphics n00b */
 
 THREE.CannyEdgeFilterPass = {
@@ -64175,7 +64881,7 @@ THREE.CannyEdgeFilterPass = {
 	].join("\n")
 
 };
-},{}],63:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  *
@@ -64223,7 +64929,7 @@ THREE.CopyShader = {
 
 };
 
-},{}],64:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  * @author davidedc / http://www.sketchpatch.net/
@@ -64313,7 +65019,7 @@ THREE.FXAAShader = {
 
 };
 
-},{}],65:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 /* Written by Arefin Mohiuddin - graphics n00b */
 
 THREE.InvertThreshholdPass = {
@@ -64360,7 +65066,7 @@ THREE.InvertThreshholdPass = {
 	].join("\n")
 
 };
-},{}],66:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 // Median Filter by graphics n00b Arefin Mohiuddin
 
 THREE.MedianFilter = {
@@ -64411,7 +65117,7 @@ THREE.MedianFilter = {
 	].join("\n")
 
 };
-},{}],67:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 /* Written by Arefin Mohiuddin - graphics n00b */
 
 THREE.MultiplyBlendShader = {
@@ -64455,7 +65161,7 @@ THREE.MultiplyBlendShader = {
 	].join("\n")
 
 };
-},{}],68:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  *
@@ -64682,7 +65388,7 @@ THREE.SSAOShader = {
 
 };
 
-},{}],69:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
 // THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
@@ -65043,9 +65749,9 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":95}],70:[function(require,module,exports){
+},{"util/":98}],73:[function(require,module,exports){
 
-},{}],71:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -66580,7 +67286,7 @@ function blitBuffer (src, dst, offset, length) {
   return i
 }
 
-},{"base64-js":72,"ieee754":73,"is-array":74}],72:[function(require,module,exports){
+},{"base64-js":75,"ieee754":76,"is-array":77}],75:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -66706,7 +67412,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],73:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -66792,7 +67498,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],74:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 
 /**
  * isArray
@@ -66827,7 +67533,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],75:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -67130,7 +67836,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],76:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -67155,12 +67861,12 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],77:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],78:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -67252,10 +67958,10 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],79:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":80}],80:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":83}],83:[function(require,module,exports){
 // a duplex stream is just a stream that is both readable and writable.
 // Since JS doesn't have multiple prototypal inheritance, this class
 // prototypally inherits from Readable, and then parasitically from
@@ -67339,7 +68045,7 @@ function forEach (xs, f) {
   }
 }
 
-},{"./_stream_readable":82,"./_stream_writable":84,"core-util-is":85,"inherits":76,"process-nextick-args":86}],81:[function(require,module,exports){
+},{"./_stream_readable":85,"./_stream_writable":87,"core-util-is":88,"inherits":79,"process-nextick-args":89}],84:[function(require,module,exports){
 // a passthrough stream.
 // basically just the most minimal sort of Transform stream.
 // Every written chunk gets output as-is.
@@ -67368,7 +68074,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":83,"core-util-is":85,"inherits":76}],82:[function(require,module,exports){
+},{"./_stream_transform":86,"core-util-is":88,"inherits":79}],85:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -68331,7 +69037,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":80,"_process":78,"buffer":71,"core-util-is":85,"events":75,"inherits":76,"isarray":77,"process-nextick-args":86,"string_decoder/":93,"util":70}],83:[function(require,module,exports){
+},{"./_stream_duplex":83,"_process":81,"buffer":74,"core-util-is":88,"events":78,"inherits":79,"isarray":80,"process-nextick-args":89,"string_decoder/":96,"util":73}],86:[function(require,module,exports){
 // a transform stream is a readable/writable stream where you do
 // something with the data.  Sometimes it's called a "filter",
 // but that's not a great name for it, since that implies a thing where
@@ -68530,7 +69236,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":80,"core-util-is":85,"inherits":76}],84:[function(require,module,exports){
+},{"./_stream_duplex":83,"core-util-is":88,"inherits":79}],87:[function(require,module,exports){
 // A bit simpler than readable streams.
 // Implement an async ._write(chunk, cb), and it'll handle all
 // the drain event emission and buffering.
@@ -69052,7 +69758,7 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-},{"./_stream_duplex":80,"buffer":71,"core-util-is":85,"events":75,"inherits":76,"process-nextick-args":86,"util-deprecate":87}],85:[function(require,module,exports){
+},{"./_stream_duplex":83,"buffer":74,"core-util-is":88,"events":78,"inherits":79,"process-nextick-args":89,"util-deprecate":90}],88:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -69162,7 +69868,7 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 }).call(this,require("buffer").Buffer)
-},{"buffer":71}],86:[function(require,module,exports){
+},{"buffer":74}],89:[function(require,module,exports){
 (function (process){
 'use strict';
 module.exports = nextTick;
@@ -69179,7 +69885,7 @@ function nextTick(fn) {
 }
 
 }).call(this,require('_process'))
-},{"_process":78}],87:[function(require,module,exports){
+},{"_process":81}],90:[function(require,module,exports){
 (function (global){
 
 /**
@@ -69245,10 +69951,10 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],88:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":81}],89:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":84}],92:[function(require,module,exports){
 var Stream = (function (){
   try {
     return require('st' + 'ream'); // hack to fix a circular dependency issue when used with browserify
@@ -69262,13 +69968,13 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":80,"./lib/_stream_passthrough.js":81,"./lib/_stream_readable.js":82,"./lib/_stream_transform.js":83,"./lib/_stream_writable.js":84}],90:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":83,"./lib/_stream_passthrough.js":84,"./lib/_stream_readable.js":85,"./lib/_stream_transform.js":86,"./lib/_stream_writable.js":87}],93:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":83}],91:[function(require,module,exports){
+},{"./lib/_stream_transform.js":86}],94:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":84}],92:[function(require,module,exports){
+},{"./lib/_stream_writable.js":87}],95:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -69397,7 +70103,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":75,"inherits":76,"readable-stream/duplex.js":79,"readable-stream/passthrough.js":88,"readable-stream/readable.js":89,"readable-stream/transform.js":90,"readable-stream/writable.js":91}],93:[function(require,module,exports){
+},{"events":78,"inherits":79,"readable-stream/duplex.js":82,"readable-stream/passthrough.js":91,"readable-stream/readable.js":92,"readable-stream/transform.js":93,"readable-stream/writable.js":94}],96:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -69620,14 +70326,14 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":71}],94:[function(require,module,exports){
+},{"buffer":74}],97:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],95:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -70217,4 +70923,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":94,"_process":78,"inherits":76}]},{},[31]);
+},{"./support/isBuffer":97,"_process":81,"inherits":79}]},{},[30]);

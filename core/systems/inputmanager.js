@@ -23,17 +23,16 @@ var InputManager = function(params) {
     params = params || {};
 
     this.inputState = params.inputState || new InputState();
+    this.container = params.container || $('#container');
 
     var self = this;
 
-    var bindMouseFunc = params.bindMouseFunc || function() {
-        $(window).mousemove(self.handleMousemove.bind(self));
-        $(window).mousedown(self.handleMousedown.bind(self));
-        $(window).mouseup(self.handleMouseup.bind(self));
-        $(window).mouseleave(self.handleMouseleave.bind(self));
+    this.bindMouseFunc = params.bindMouseFunc || function() {
+        self.container.mousemove(self.handleMousemove.bind(self));
+        self.container.mousedown(self.handleMousedown.bind(self));
+        self.container.mouseup(self.handleMouseup.bind(self));
+        self.container.mouseleave(self.handleMouseleave.bind(self));
     };
-
-    bindMouseFunc();
 
     this.componentPredicate = function(component) {
         return component instanceof InputComponent;
@@ -44,6 +43,12 @@ var InputManager = function(params) {
 
 InputManager.prototype = Object.create(System.prototype);
 InputManager.prototype.constructor = InputManager;
+
+InputManager.prototype.start = function() {
+    this.keyMap = this.getGame().keyMap;
+    this.bindKeyMap();
+    this.bindMouseFunc();
+};
 
 InputManager.prototype.bindKeyMap = function() {
     MouseTrap.reset();
@@ -124,11 +129,6 @@ InputManager.prototype.handleMousemove = function(e) {
 
 InputManager.prototype.handleMouseleave = function() {
     this.inputState.mousehold = false;
-};
-
-InputManager.prototype.start = function() {
-    this.keyMap = this.getGame().keyMap;
-    this.bindKeyMap();
 };
 
 InputManager.prototype.afterTick = function() {
