@@ -42,9 +42,11 @@ window.onload = function() {
 
     var container = $('#container');
 
-    require('./ui/form')({
+    var form = require('./ui/form')({
         inputController: inputController
     });
+
+    inputController.form = form;
 
     $(function() {
         $(".draggable").draggable();

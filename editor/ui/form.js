@@ -40,6 +40,24 @@ module.exports = function(params) {
     assert.object(onlyaoCheckbox[0]);
     assert.object(edgesCheckbox[0]);
 
+    var form = {
+        blockX: blockX,
+        blockY: blockY,
+        blockZ: blockZ,
+        scaleResetButton: scaleResetButton,
+        newButton: newButton,
+        openButton: openButton,
+        saveButton: saveButton,
+        undoButton: undoButton,
+        redoButton: redoButton,
+        gridCheckbox: gridCheckbox,
+        ssaoCheckbox: ssaoCheckbox,
+        onlyaoCheckbox: onlyaoCheckbox,
+        edgesCheckbox: edgesCheckbox,
+        zoomInButton: zoomInButton,
+        zoomOutButton: zoomOutButton
+    }
+
     blockX.bind('input', function() {
         inputController.setBlockX(parseFloat(blockX.val()));
     });
@@ -128,4 +146,6 @@ module.exports = function(params) {
         },
         palette: palette
     });
+
+    return form;
 };

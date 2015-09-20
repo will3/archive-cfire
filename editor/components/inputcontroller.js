@@ -44,6 +44,8 @@ var InputController = function() {
     this.redoCommands = [];
 
     this.pointerEnabled = true;
+
+    this.form = null;
 };
 
 InputController.prototype = Object.create(Component.prototype);
@@ -83,6 +85,8 @@ InputController.prototype.start = function() {
     this.inputComponent.mousedown(this.onMousedown.bind(this));
     this.inputComponent.mouseup(this.onMouseup.bind(this));
     this.inputComponent.mousemove(this.onMousemove.bind(this));
+
+    this.updateUndoButtons();
 };
 
 InputController.prototype.moveGridUp = function() {
@@ -248,6 +252,8 @@ InputController.prototype.runCommand = function(command) {
     command.run();
     this.commands.push(command);
     this.redoCommands = [];
+
+    this.updateUndoButtons();
 };
 
 InputController.prototype.undo = function() {
@@ -261,6 +267,7 @@ InputController.prototype.undo = function() {
     this.redoCommands.push(lastCommand);
 
     this.updateUrl();
+    this.updateUndoButtons();
 };
 
 InputController.prototype.redo = function() {
@@ -274,7 +281,13 @@ InputController.prototype.redo = function() {
     this.commands.push(lastCommand);
 
     this.updateUrl();
+    this.updateUndoButtons();
 };
+
+InputController.prototype.updateUndoButtons = function() {
+    this.form.redoButton.prop('disabled', this.redoCommands.length == 0);
+    this.form.undoButton.prop('disabled', this.commands.length == 0);
+}
 
 InputController.prototype.save = function() {
     var json = this.chunkController.serialize();
