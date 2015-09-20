@@ -19,10 +19,30 @@ label {
     font-size: 12px;
 }
 
+input,
+#open-button {
+    font-family: 'Roboto', Arial, serif;
+    border: none;
+    padding: 5px 10px;
+    background-color: #bbb;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
 input[type="button"] {
     color: #111;
     font-family: 'Roboto', Arial, serif;
     font-size: 12px;
+    width: 100%;
+}
+
+input[type="number"] {
+    background-color: #fff;
+}
+
+#open-button {
+    width: 100%;
 }
 
 #container {
@@ -44,6 +64,10 @@ input[type="button"] {
     background-color: #DDD;
     opacity: 0.8;
     width: 100px;
+    left: 0px;
+    top: 0px;
+    bottom: 0px;
+    overflow: scroll;
 }
 
 .cf-toolbar {

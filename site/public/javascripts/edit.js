@@ -455,6 +455,9 @@ var RenderComponent = function() {
 
     //visible
     this.visible = true;
+
+    //has edges
+    this.hasEdges = false;
 };
 
 RenderComponent.prototype = Object.create(Component.prototype);
@@ -552,32 +555,8 @@ LightComponent.prototype.constructor = LightComponent;
 
 module.exports = LightComponent;
 },{"../component":5}],10:[function(require,module,exports){
-var Component = require('../component');
-var THREE = require('three');
-
-var RenderComponent = function() {
-    Component.call(this);
-
-    //sets render object
-    //defaults to empty object 3d
-    this.object = null;
-
-    //wether to perform a redraw in the next frame
-    //used by renderer
-    this.needsRedraw = false;
-
-    //visible
-    this.visible = true;
-
-    //has edges
-    this.hasEdges = false;
-};
-
-RenderComponent.prototype = Object.create(Component.prototype);
-RenderComponent.prototype.constructor = RenderComponent;
-
-module.exports = RenderComponent;
-},{"../component":5,"three":59}],11:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"../component":5,"dup":6,"three":59}],11:[function(require,module,exports){
 var Component = require('../component');
 var THREE = require('three');
 
@@ -2692,7 +2671,8 @@ module.exports = [
     'rgb(88, 76, 64)',
     'rgb(88, 122, 110)',
     'rgb(253, 234, 191)',
-    'rgb(237, 231, 213)'
+    'rgb(237, 231, 213)',
+    'rgb(255 189 189)'
 ];
 },{}],43:[function(require,module,exports){
 var extend = require('extend');
