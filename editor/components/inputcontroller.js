@@ -32,8 +32,6 @@ var InputController = function() {
 
     this.isRemove = false;
 
-    this.inputText = '';
-
     this.lastX = null;
     this.lastY = null;
 
@@ -72,15 +70,15 @@ InputController.prototype.start = function() {
     this.inputComponent.keydown('remove', this.removePressed.bind(this));
     this.inputComponent.keyup('remove', this.removeReleased.bind(this));
     this.inputComponent.keydown('grid', this.gridPressed.bind(this));
-    this.inputComponent.keydown(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '-'], function(key) {
-        this.appendInput(key);
-    }.bind(this));
     this.inputComponent.keydown('enter', this.enterInput.bind(this));
     this.inputComponent.keydown('undo', this.undo.bind(this));
     this.inputComponent.keydown('redo', this.redo.bind(this));
     this.inputComponent.keydown('save', this.save.bind(this));
     this.inputComponent.keydown('zoomin', this.zoomIn.bind(this));
     this.inputComponent.keydown('zoomout', this.zoomOut.bind(this));
+    this.inputComponent.keydown('x', this.axisXPressed.bind(this));
+    this.inputComponent.keydown('y', this.axisYPressed.bind(this));
+    this.inputComponent.keydown('z', this.axisZPressed.bind(this));
 
     this.inputComponent.mousedown(this.onMousedown.bind(this));
     this.inputComponent.mouseup(this.onMouseup.bind(this));
@@ -117,7 +115,7 @@ InputController.prototype.setGridHidden = function(hidden) {
     this.gridController.gridHidden = hidden;
 };
 
-InputController.prototype.setWireFrameHidden = function(hidden){
+InputController.prototype.setWireFrameHidden = function(hidden) {
     this.chunkController.setWireFrameHidden(hidden);
 };
 
@@ -134,15 +132,6 @@ InputController.prototype.setOnlyao = function(value) {
 InputController.prototype.setEdges = function(value) {
     this.root.renderer.edges = value;
     this.root.renderer.postprocessingNeedsUpdate = true;
-};
-
-InputController.prototype.appendInput = function(key) {
-    this.inputText += key;
-};
-
-InputController.prototype.enterInput = function() {
-    this.inputText = '';
-    //process input
 };
 
 InputController.prototype.tick = function() {
@@ -341,7 +330,19 @@ InputController.prototype.zoomOut = function() {
     this.cameraController.zoom(1.1);
 };
 
-InputController.prototype.toolPressed = function(toolName) {
+InputController.prototype.axisXPressed = function() {
+    this.form.blockX.select();
+};
+
+InputController.prototype.axisYPressed = function() {
+    this.form.blockY.select();
+};
+
+InputController.prototype.axisZPressed = function() {
+    this.form.blockZ.select();
+};
+
+InputController.prototype.enterInput = function() {
 
 };
 

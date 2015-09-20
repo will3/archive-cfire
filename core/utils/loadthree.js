@@ -6,6 +6,7 @@ require('../../three/shaders/MedianFilter.js');
 require('../../three/shaders/InvertThreshholdPass.js');
 require('../../three/shaders/CannyEdgeFilterPass.js');
 require('../../three/shaders/MultiplyBlendShader.js');
+require('../../three/shaders/BlendShader.js');
 
 require('../../three/postprocessing/RenderPass.js');
 require('../../three/postprocessing/ShaderPass.js');

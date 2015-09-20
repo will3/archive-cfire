@@ -19,6 +19,7 @@ var Renderer = function(container) {
 
     //object look up, by component id
     this.objectMap = {};
+    this.edgeObjectMap = {};
 
     this.scene = new THREE.Scene();
     this.edgeScene = new THREE.Scene();
@@ -85,6 +86,10 @@ Renderer.prototype.initPostprocessing = function() {
     //invert edge
     var invert = new THREE.ShaderPass(THREE.InvertThreshholdPass);
     this.edgeComposer.addPass(invert);
+
+    //copy edges
+    var copyPass = new THREE.ShaderPass(THREE.CopyShader);
+    this.edgeComposer.addPass(copyPass);
 
     // Setup depth pass
     var depthShader = THREE.ShaderLib["depthRGBA"];
@@ -180,19 +185,6 @@ Renderer.prototype.tick = function() {
             }
         }
 
-        //add to map
-        if (this.objectMap[renderComponent.id] == null) {
-            if (renderComponent.object != null) {
-                this.addObject(renderComponent);
-            }
-        } else if (this.objectMap[id] != renderComponent.object) {
-            this.removeObject(renderComponent);
-
-            if (renderComponent.object != null) {
-                this.addObject(renderComponent);
-            }
-        }
-
         if (renderComponent.object == null) {
             continue;
         }
@@ -206,49 +198,31 @@ Renderer.prototype.tick = function() {
 };
 
 Renderer.prototype.objectNeedsUpdate = function(renderComponent) {
-    var objectMap = this.objectMap[renderComponent.id];
-
-    if (objectMap == null) {
-        return renderComponent.object != null;
-    }
-
-    return (objectMap.objectId != renderComponent.object.id);
+    return this.objectMap[renderComponent.id] != renderComponent.object;
 };
 
 Renderer.prototype.addObject = function(renderComponent) {
-    var objectMap = this.objectMap[renderComponent.id] = {
-        objectId: renderComponent.object.id,
-        objects: []
-    };
-
     var object = renderComponent.object;
     this.scene.add(object);
-    objectMap.objects.push({
-        scene: this.scene,
-        object: object
-    });
+    this.objectMap[renderComponent.id] = object;
 
     if (renderComponent.hasEdges) {
-        object = object.clone();
-        this.edgeScene.add(object);
-        objectMap.objects.push({
-            scene: this.edgeScene,
-            object: object
-        });
+        var edgeObject = object.clone();
+        this.edgeObjectMap[renderComponent.id] = edgeObject;
+        this.edgeScene.add(edgeObject);
     }
 };
 
 Renderer.prototype.removeObject = function(renderComponent) {
-    var objectMap = this.objectMap[renderComponent.id];
-
-    for (var i in objectMap.objects) {
-        var scene = objectMap.objects[i].scene;
-        var object = objectMap.objects[i].object;
-
-        scene.remove(object);
-    }
-
+    var object = this.objectMap[renderComponent.id];
+    this.scene.add(object);
     delete this.objectMap[renderComponent.id];
+
+    var edgeObject = this.edgeObjectMap[renderComponent.id];
+    if (edgeObject != null) {
+        this.edgeScene.remove(edgeObject);
+        delete this.edgeObjectMap[renderComponent.id];
+    }
 };
 
 module.exports = Renderer;

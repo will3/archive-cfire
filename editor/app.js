@@ -139,11 +139,11 @@ var addLights = function(game) {
 
     game.addEntity(entity);
 
-    // var ambient = entity.addComponent(LightComponent);
-    // ambient.light = new THREE.AmbientLight(0xB3B3B3);
+    var ambient = entity.addComponent(LightComponent);
+    ambient.light = new THREE.AmbientLight(0x333333);
 
-    // var directional = entity.addComponent(LightComponent);
-    // var directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    // directionalLight.position.set(0.2, 0.5, 0.4);
-    // directional.light = directionalLight;
+    var directional = entity.addComponent(LightComponent);
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    directionalLight.position.set(0.2, 0.5, 0.4);
+    directional.light = directionalLight;
 };

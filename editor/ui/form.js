@@ -71,6 +71,13 @@ module.exports = function(params) {
         inputController.setBlockZ(parseFloat(blockZ.val()));
     });
 
+    $('input[type="number"]').keyup(function(e) {
+        if (e.keyCode == 13) {
+            // Do something
+            $('#container').focus();
+        }
+    });
+
     scaleResetButton.click(function() {
         blockX.val(1);
         blockY.val(1);

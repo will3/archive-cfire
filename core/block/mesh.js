@@ -165,12 +165,19 @@ module.exports = function(chunk, params) {
 
         var color = block.color || 0x000000
         var materialIndex = _.findIndex(materials, function(material) {
-            return material.emissive.getHex() == color;
+            return material.color.getHex() == color;
         });
 
         if (materialIndex == -1) {
+            var lightness = new THREE.Color(block.color).getHSL().l;
+
+            var emissiveFactor = 0.3;
+            var color = new THREE.Color(block.color).offsetHSL(0, 0, -lightness * emissiveFactor);
+            var emissive = new THREE.Color(block.color).offsetHSL(0, 0, -lightness * (1 - emissiveFactor));
+
             materials.push(new THREE.MeshLambertMaterial({
-                emissive: new THREE.Color(block.color)
+                emissive: emissive,
+                color: color
             }));
 
             materialIndex = materials.length - 1;
