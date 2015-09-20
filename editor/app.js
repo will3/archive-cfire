@@ -104,8 +104,10 @@ var addChunk = function(game) {
 
     var chunkController = entity.addComponent(ChunkController);
     chunkController.loadFromUrl();
-    var renderComponent = entity.addComponent(RenderComponent);
+    var renderComponent = entity.addComponent(RenderComponent, 'renderComponent');
     renderComponent.hasEdges = true;
+    entity.addComponent(RenderComponent, 'wireFrameRenderComponent');
+
     entity.addComponent(CollisionBody);
 };
 

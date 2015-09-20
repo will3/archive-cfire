@@ -13,6 +13,7 @@ var ChunkController = function() {
     Component.call(this);
 
     this.renderComponent = null;
+    this.wireFrameRenderComponent = null;
 
     this.gridSize = 50;
 
@@ -21,14 +22,19 @@ var ChunkController = function() {
     this.faceMap = {};
 
     this.lineColor = 0x333333;
+
+
 }
 
 ChunkController.prototype = Object.create(Component.prototype);
 ChunkController.prototype.constructor = ChunkController;
 
 ChunkController.prototype.start = function() {
-    this.renderComponent = this.getComponent(RenderComponent);
     this.collisionBody = this.getComponent(CollisionBody);
+    this.renderComponent = this.getComponentByName('renderComponent');
+    this.wireFrameRenderComponent = this.getComponentByName('wireFrameRenderComponent');
+
+    assert.object(this.wireFrameRenderComponent, 'wireFrameRenderComponent');
     assert.object(this.renderComponent, 'renderComponent');
     assert.object(this.collisionBody, 'collisionBody');
 
@@ -66,11 +72,10 @@ ChunkController.prototype.updateObjects = function() {
         color: 0x000000,
     }), THREE.LinePieces);
 
-    var renderObject = new THREE.Object3D();
-    renderObject.add(object);
-    // renderObject.add(edgeObject);
+    this.wireFrameRenderComponent.visible = !this.wireFrameHidden;
 
-    this.renderComponent.object = renderObject;
+    this.renderComponent.object = object;
+    this.wireFrameRenderComponent.object = edgeObject;
     this.collisionBody.object = object;
 };
 
@@ -79,7 +84,7 @@ ChunkController.prototype.reset = function() {
     this.updateObjects();
 };
 
-ChunkController.prototype.setChunk = function(chunk){
+ChunkController.prototype.setChunk = function(chunk) {
     this.chunk = chunk;
     this.updateObjects();
 };
@@ -99,6 +104,11 @@ ChunkController.prototype.loadFromUrl = function() {
     }
     var json = JSON.parse(require('lz-string').decompressFromEncodedURIComponent(data));
     this.chunk = deserialize(json);
+};
+
+ChunkController.prototype.setWireFrameHidden = function(hidden) {
+    this.wireFrameHidden = hidden;
+    this.updateObjects();
 };
 
 module.exports = ChunkController;

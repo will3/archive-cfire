@@ -382,6 +382,7 @@ var getGame = require('../core/macros/getgame');
 var Component = function() {
     this.id = uuid();
     this.started = false;
+    this.name = null;
 };
 
 var defaultFunc = function() {};
@@ -419,6 +420,12 @@ Component.prototype = {
 
     getEntityByName: function(name) {
         return getGame().entityManager.getEntityByName(name);
+    },
+
+    getComponentByName: function(name) {
+        return _.find(getGame().entityManager.getOwningEntity(this.id).getComponents(), function(component) {
+            return component.name === name;
+        });
     },
 
     notify: function(func, param) {
@@ -592,16 +599,20 @@ var Entity = function() {
 Entity.prototype = {
     constructor: Entity,
 
-    addComponent: function(component) {
+    addComponent: function(component, name) {
         if (_.isFunction(component)) {
             var type = component;
-            return this.addComponent(new type());
-
-            return;
+            return this.addComponent(new type(), name);
         }
 
         var game = getGame();
-        return getGame().entityManager.addComponent(this, component);
+
+        var component = getGame().entityManager.addComponent(this, component);
+        if (name != null) {
+            component.name = name;
+        }
+
+        return component;
     },
 
     removeComponent: function(component) {
@@ -1818,8 +1829,10 @@ var addChunk = function(game) {
 
     var chunkController = entity.addComponent(ChunkController);
     chunkController.loadFromUrl();
-    var renderComponent = entity.addComponent(RenderComponent);
+    var renderComponent = entity.addComponent(RenderComponent, 'renderComponent');
     renderComponent.hasEdges = true;
+    entity.addComponent(RenderComponent, 'wireFrameRenderComponent');
+
     entity.addComponent(CollisionBody);
 };
 
@@ -1922,6 +1935,7 @@ var ChunkController = function() {
     Component.call(this);
 
     this.renderComponent = null;
+    this.wireFrameRenderComponent = null;
 
     this.gridSize = 50;
 
@@ -1930,14 +1944,19 @@ var ChunkController = function() {
     this.faceMap = {};
 
     this.lineColor = 0x333333;
+
+
 }
 
 ChunkController.prototype = Object.create(Component.prototype);
 ChunkController.prototype.constructor = ChunkController;
 
 ChunkController.prototype.start = function() {
-    this.renderComponent = this.getComponent(RenderComponent);
     this.collisionBody = this.getComponent(CollisionBody);
+    this.renderComponent = this.getComponentByName('renderComponent');
+    this.wireFrameRenderComponent = this.getComponentByName('wireFrameRenderComponent');
+
+    assert.object(this.wireFrameRenderComponent, 'wireFrameRenderComponent');
     assert.object(this.renderComponent, 'renderComponent');
     assert.object(this.collisionBody, 'collisionBody');
 
@@ -1975,11 +1994,10 @@ ChunkController.prototype.updateObjects = function() {
         color: 0x000000,
     }), THREE.LinePieces);
 
-    var renderObject = new THREE.Object3D();
-    renderObject.add(object);
-    // renderObject.add(edgeObject);
+    this.wireFrameRenderComponent.visible = !this.wireFrameHidden;
 
-    this.renderComponent.object = renderObject;
+    this.renderComponent.object = object;
+    this.wireFrameRenderComponent.object = edgeObject;
     this.collisionBody.object = object;
 };
 
@@ -1988,7 +2006,7 @@ ChunkController.prototype.reset = function() {
     this.updateObjects();
 };
 
-ChunkController.prototype.setChunk = function(chunk){
+ChunkController.prototype.setChunk = function(chunk) {
     this.chunk = chunk;
     this.updateObjects();
 };
@@ -2008,6 +2026,11 @@ ChunkController.prototype.loadFromUrl = function() {
     }
     var json = JSON.parse(require('lz-string').decompressFromEncodedURIComponent(data));
     this.chunk = deserialize(json);
+};
+
+ChunkController.prototype.setWireFrameHidden = function(hidden) {
+    this.wireFrameHidden = hidden;
+    this.updateObjects();
 };
 
 module.exports = ChunkController;
@@ -2265,6 +2288,10 @@ InputController.prototype.gridPressed = function() {
 
 InputController.prototype.setGridHidden = function(hidden) {
     this.gridController.gridHidden = hidden;
+};
+
+InputController.prototype.setWireFrameHidden = function(hidden){
+    this.chunkController.setWireFrameHidden(hidden);
 };
 
 InputController.prototype.setSsao = function(value) {
@@ -2772,6 +2799,7 @@ module.exports = function(params) {
     var ssaoCheckbox = $('#ssao-checkbox');
     var onlyaoCheckbox = $('#onlyao-checkbox');
     var edgesCheckbox = $('#edges-checkbox');
+    var wireframeCheckbox = $('#wireframe-checkbox');
     var zoomInButton = $('#zoom-in-button');
     var zoomOutButton = $('#zoom-out-button');
 
@@ -2847,6 +2875,11 @@ module.exports = function(params) {
     gridCheckbox.change(function() {
         var checked = $(this).is(":checked");
         inputController.setGridHidden(!checked);
+    });
+
+    wireframeCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setWireFrameHidden(!checked);
     });
 
     ssaoCheckbox.change(function() {

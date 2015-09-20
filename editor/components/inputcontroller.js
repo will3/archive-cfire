@@ -117,6 +117,10 @@ InputController.prototype.setGridHidden = function(hidden) {
     this.gridController.gridHidden = hidden;
 };
 
+InputController.prototype.setWireFrameHidden = function(hidden){
+    this.chunkController.setWireFrameHidden(hidden);
+};
+
 InputController.prototype.setSsao = function(value) {
     this.root.renderer.ssao = value;
     this.root.renderer.postprocessingNeedsUpdate = true;

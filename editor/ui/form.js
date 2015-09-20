@@ -23,6 +23,7 @@ module.exports = function(params) {
     var ssaoCheckbox = $('#ssao-checkbox');
     var onlyaoCheckbox = $('#onlyao-checkbox');
     var edgesCheckbox = $('#edges-checkbox');
+    var wireframeCheckbox = $('#wireframe-checkbox');
     var zoomInButton = $('#zoom-in-button');
     var zoomOutButton = $('#zoom-out-button');
 
@@ -98,6 +99,11 @@ module.exports = function(params) {
     gridCheckbox.change(function() {
         var checked = $(this).is(":checked");
         inputController.setGridHidden(!checked);
+    });
+
+    wireframeCheckbox.change(function() {
+        var checked = $(this).is(":checked");
+        inputController.setWireFrameHidden(!checked);
     });
 
     ssaoCheckbox.change(function() {

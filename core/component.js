@@ -4,6 +4,7 @@ var getGame = require('../core/macros/getgame');
 var Component = function() {
     this.id = uuid();
     this.started = false;
+    this.name = null;
 };
 
 var defaultFunc = function() {};
@@ -41,6 +42,12 @@ Component.prototype = {
 
     getEntityByName: function(name) {
         return getGame().entityManager.getEntityByName(name);
+    },
+
+    getComponentByName: function(name) {
+        return _.find(getGame().entityManager.getOwningEntity(this.id).getComponents(), function(component) {
+            return component.name === name;
+        });
     },
 
     notify: function(func, param) {

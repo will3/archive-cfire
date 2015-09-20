@@ -17,16 +17,20 @@ var Entity = function() {
 Entity.prototype = {
     constructor: Entity,
 
-    addComponent: function(component) {
+    addComponent: function(component, name) {
         if (_.isFunction(component)) {
             var type = component;
-            return this.addComponent(new type());
-
-            return;
+            return this.addComponent(new type(), name);
         }
 
         var game = getGame();
-        return getGame().entityManager.addComponent(this, component);
+
+        var component = getGame().entityManager.addComponent(this, component);
+        if (name != null) {
+            component.name = name;
+        }
+
+        return component;
     },
 
     removeComponent: function(component) {
