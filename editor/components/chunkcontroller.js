@@ -98,7 +98,7 @@ ChunkController.prototype.load = function(json) {
 };
 
 ChunkController.prototype.loadFromUrl = function() {
-    var data = require('../geturlparameter')('b');
+    var data = require('./utils/geturlparameter')('b');
     if (data == null) {
         return;
     }
