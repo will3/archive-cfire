@@ -83,7 +83,7 @@ Component.prototype = {
             func: func
         });
 
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindKeyDown: function(event, func) {
@@ -95,7 +95,7 @@ Component.prototype = {
         }
 
         this._bind(event, 'keydown', func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindKeyUp: function(event, func) {
@@ -107,22 +107,22 @@ Component.prototype = {
         }
 
         this._bind(event, 'keyup', func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindMouseMove: function(func) {
         this.mousemoveFunc.push(func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindMouseDown: function(func) {
         this.mousedownFunc.push(func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindMouseUp: function(func) {
         this.mouseupFunc.push(func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     }
 };
 

@@ -16,15 +16,15 @@ Physics.prototype.start = function() {
 
 };
 
-Physics.prototype.tick = function() {
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+Physics.prototype.tick = function(componentMap) {
+    for (var id in componentMap) {
+        var component = componentMap[id];
         this.step(component);
     }
 };
 
 Physics.prototype.step = function(component) {
-	
+
 };
 
 module.exports = Physics;

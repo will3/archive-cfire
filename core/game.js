@@ -12,58 +12,45 @@ var Collision = require('./systems/collision');
 var Console = require('./systems/console');
 
 //params
-//skipRegisterGame: skip registering for game singleton, setting this true will stop macros will funcitoning, defaults to false
 //systems: systems this game should run, creates default set if left empty
 //keyMap: key map
 //types: type bindings
 var Game = function(params) {
     params = params || {};
 
+    //key map
     this.keyMap = params.keyMap;
+
+    //tick rate
     this.tickRate = params.tickRate || 60.0;
+
+    //scenario
     this.scenario = params.scenario;
 
+    //entity manager
     this.entityManager = new EntityManager();
 
-    this.systems = [];
-
+    //main container
     this.container = params.container || $('#container');
 
-    var skipRegisterGame = params.skipRegisterGame || false;
-    if (!skipRegisterGame) {
-        registerGame(this);
-    }
+    //register singleton
+    registerGame(this);
 
+    //systems
     this.systems = params.systems || require('./systems');
 
-    var self = this;
-    this.systems.forEach(function(system) {
-        system.setEntityManager(self.entityManager);
-    });
+    this.renderer = this.systems.renderer;
+    this.inputManager = this.systems.inputManager;
+    this.collision = this.systems.collision;
 
-    this.renderer = this.getSystem(Renderer);
-    this.inputManager = this.getSystem(InputManager);
-    this.collision = this.getSystem(Collision);
-    this.console = this.getSystem(Console);
-
+    //register types
     extend(require('./macros/types'), params.types || {});
 
-    if (this.scenario != null) {
-        this.load(this.scenario);
-    }
+    //map of component(s) relevant for systems
+    this.componentMap = {};
 
-    //disable right click
-    document.oncontextmenu = document.body.oncontextmenu = function() {
-        return false;
-    }
-
-    var interval = function() {
-        self.tick(1000.0 / self.tickRate);
-        self.afterTick();
-        setTimeout(interval, 1000.0 / self.tickRate);
-    }
-
-    interval();
+    //auto start
+    this.start();
 };
 
 Game.prototype = {
@@ -81,29 +68,65 @@ Game.prototype = {
         return this.collision.mouseCollisions;
     },
 
-    getSystem: function(type) {
-        return _.find(this.systems, function(system) {
-            return system instanceof type;
-        });
+    start: function() {
+
+        this.entityManager.onAddComponent(function(component) {
+            this.evaluateComponent(component);
+        }.bind(this));
+
+        this.entityManager.onRemoveComponent(function() {
+            for (var key in this.systems) {
+                var system = this.systems[key];
+                var map = this.systems[key];
+                if (map == null) {
+                    map = this.componentMap[key] = {};
+                }
+
+                delete map[component.id];
+            }
+        }.bind(this));
+
+        //load scenario
+        if (this.scenario != null) {
+            var loader = require('./loader')(this);
+            loader.load(this.scenario);
+        }
+
+        //disable right click
+        document.oncontextmenu = document.body.oncontextmenu = function() {
+            return false;
+        }
+
+        //start update loop
+        var interval = function() {
+            this.tick(1000.0 / this.tickRate);
+            this.afterTick();
+            setTimeout(interval, 1000.0 / this.tickRate);
+        }.bind(this);
+
+        interval();
     },
 
     tick: function(elapsedTime) {
         var self = this;
         //tick each system
-        this.systems.forEach(function(system) {
+
+        for (var key in this.systems) {
+            var system = this.systems[key];
             if (!system.started) {
                 system.start();
                 system.started = true;
             }
-            system.tick(elapsedTime);
-        });
+            var componentMap = this.componentMap[key];
+            system.tick(componentMap, elapsedTime);
+        }
     },
 
     afterTick: function() {
-        var self = this;
-        this.systems.forEach(function(system) {
+        for (var key in this.systems) {
+            var system = this.systems[key];
             system.afterTick();
-        });
+        }
     },
 
     getEntityByName: function(name) {
@@ -122,9 +145,18 @@ Game.prototype = {
         this.renderer.scene.remove(object);
     },
 
-    load: function(data) {
-        var loader = require('./loader')(this);
-        loader.load(data);
+    evaluateComponent: function(component) {
+        for (var key in this.systems) {
+            var system = this.systems[key];
+            var map = this.componentMap[key];
+            if (map == null) {
+                map = this.componentMap[key] = {};
+            }
+
+            if (system.componentPredicate(component)) {
+                map[component.id] = component;
+            }
+        }
     }
 };
 

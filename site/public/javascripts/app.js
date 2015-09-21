@@ -82,7 +82,7 @@ window.onload = function() {
     });
 }
 },{"../core/engine":18,"./components/blockmodel":1,"./components/inputcontroller":2,"./components/shipcontroller":3,"./scenario.json":6}],5:[function(require,module,exports){
-module.exports=﻿[
+module.exports=module.exports=﻿[
     [{
         "scale": {
             "x": 1,
@@ -93,7 +93,7 @@ module.exports=﻿[
     }], "0,0,2,0", "1,0,1,0", "1,0,2,0", "1,0,3,0", "2,0,2,0", "3,0,0,0", "3,0,1,0", "3,0,2,0", "3,0,3,0", "3,0,4,0", "4,0,2,0", "5,0,2,0", "-4,0,2,0", "-3,0,0,0", "-3,0,1,0", "-3,0,2,0", "-3,0,3,0", "-3,0,4,0", "-2,0,2,0", "-1,0,1,0", "-1,0,2,0", "-1,0,3,0", "-5,0,2,0"
 ]
 },{}],6:[function(require,module,exports){
-module.exports={
+module.exports=module.exports={
     "prefabs": {
         "frigate": {
             "name": "frigate",
@@ -585,7 +585,7 @@ Component.prototype = {
             func: func
         });
 
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindKeyDown: function(event, func) {
@@ -597,7 +597,7 @@ Component.prototype = {
         }
 
         this._bind(event, 'keydown', func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindKeyUp: function(event, func) {
@@ -609,22 +609,22 @@ Component.prototype = {
         }
 
         this._bind(event, 'keyup', func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindMouseMove: function(func) {
         this.mousemoveFunc.push(func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindMouseDown: function(func) {
         this.mousedownFunc.push(func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     },
 
     bindMouseUp: function(func) {
         this.mouseupFunc.push(func);
-        this.root.inputManager.evaluateComponent(this);
+        this.root.evaluateComponent(this);
     }
 };
 
@@ -1019,7 +1019,7 @@ EntityManager.prototype = {
         };
 
         this.addComponentCallbacks.forEach(function(callback) {
-            callback(component.id);
+            callback(component);
         });
 
         return component;
@@ -1032,10 +1032,11 @@ EntityManager.prototype = {
         if (entityMap != null) {
             _.pull(entityMap.componentIds, id);
         }
+        var component = this.getComponent(id);
         delete this.componentMap[id];
 
         this.removeComponentCallbacks.forEach(function(callback) {
-            callback(id);
+            callback(component);
         });
     },
 
@@ -1105,58 +1106,45 @@ var Collision = require('./systems/collision');
 var Console = require('./systems/console');
 
 //params
-//skipRegisterGame: skip registering for game singleton, setting this true will stop macros will funcitoning, defaults to false
 //systems: systems this game should run, creates default set if left empty
 //keyMap: key map
 //types: type bindings
 var Game = function(params) {
     params = params || {};
 
+    //key map
     this.keyMap = params.keyMap;
+
+    //tick rate
     this.tickRate = params.tickRate || 60.0;
+
+    //scenario
     this.scenario = params.scenario;
 
+    //entity manager
     this.entityManager = new EntityManager();
 
-    this.systems = [];
-
+    //main container
     this.container = params.container || $('#container');
 
-    var skipRegisterGame = params.skipRegisterGame || false;
-    if (!skipRegisterGame) {
-        registerGame(this);
-    }
+    //register singleton
+    registerGame(this);
 
+    //systems
     this.systems = params.systems || require('./systems');
 
-    var self = this;
-    this.systems.forEach(function(system) {
-        system.setEntityManager(self.entityManager);
-    });
+    this.renderer = this.systems.renderer;
+    this.inputManager = this.systems.inputManager;
+    this.collision = this.systems.collision;
 
-    this.renderer = this.getSystem(Renderer);
-    this.inputManager = this.getSystem(InputManager);
-    this.collision = this.getSystem(Collision);
-    this.console = this.getSystem(Console);
-
+    //register types
     extend(require('./macros/types'), params.types || {});
 
-    if (this.scenario != null) {
-        this.load(this.scenario);
-    }
+    //map of component(s) relevant for systems
+    this.componentMap = {};
 
-    //disable right click
-    document.oncontextmenu = document.body.oncontextmenu = function() {
-        return false;
-    }
-
-    var interval = function() {
-        self.tick(1000.0 / self.tickRate);
-        self.afterTick();
-        setTimeout(interval, 1000.0 / self.tickRate);
-    }
-
-    interval();
+    //auto start
+    this.start();
 };
 
 Game.prototype = {
@@ -1174,29 +1162,65 @@ Game.prototype = {
         return this.collision.mouseCollisions;
     },
 
-    getSystem: function(type) {
-        return _.find(this.systems, function(system) {
-            return system instanceof type;
-        });
+    start: function() {
+
+        this.entityManager.onAddComponent(function(component) {
+            this.evaluateComponent(component);
+        }.bind(this));
+
+        this.entityManager.onRemoveComponent(function() {
+            for (var key in this.systems) {
+                var system = this.systems[key];
+                var map = this.systems[key];
+                if (map == null) {
+                    map = this.componentMap[key] = {};
+                }
+
+                delete map[component.id];
+            }
+        }.bind(this));
+
+        //load scenario
+        if (this.scenario != null) {
+            var loader = require('./loader')(this);
+            loader.load(this.scenario);
+        }
+
+        //disable right click
+        document.oncontextmenu = document.body.oncontextmenu = function() {
+            return false;
+        }
+
+        //start update loop
+        var interval = function() {
+            this.tick(1000.0 / this.tickRate);
+            this.afterTick();
+            setTimeout(interval, 1000.0 / this.tickRate);
+        }.bind(this);
+
+        interval();
     },
 
     tick: function(elapsedTime) {
         var self = this;
         //tick each system
-        this.systems.forEach(function(system) {
+
+        for (var key in this.systems) {
+            var system = this.systems[key];
             if (!system.started) {
                 system.start();
                 system.started = true;
             }
-            system.tick(elapsedTime);
-        });
+            var componentMap = this.componentMap[key];
+            system.tick(componentMap, elapsedTime);
+        }
     },
 
     afterTick: function() {
-        var self = this;
-        this.systems.forEach(function(system) {
+        for (var key in this.systems) {
+            var system = this.systems[key];
             system.afterTick();
-        });
+        }
     },
 
     getEntityByName: function(name) {
@@ -1215,9 +1239,18 @@ Game.prototype = {
         this.renderer.scene.remove(object);
     },
 
-    load: function(data) {
-        var loader = require('./loader')(this);
-        loader.load(data);
+    evaluateComponent: function(component) {
+        for (var key in this.systems) {
+            var system = this.systems[key];
+            var map = this.componentMap[key];
+            if (map == null) {
+                map = this.componentMap[key] = {};
+            }
+
+            if (system.componentPredicate(component)) {
+                map[component.id] = component;
+            }
+        }
     }
 };
 
@@ -1362,8 +1395,6 @@ module.exports = types;
 var getGame = require('./macros/getgame');
 
 var System = function(entityManager) {
-    this.entityManager = null;
-
     this.componentPredicate = function() {
         return true;
     };
@@ -1378,38 +1409,11 @@ var System = function(entityManager) {
 System.prototype = {
     constructor: System,
 
-    //sets entity manager
-    //and subscribe to entity events
-    //this doesn't add entities retrospectively
-    setEntityManager: function(entityManager) {
-        this.entityManager = entityManager;
-
-        //subscribe entity events
-        this.entityManager.onAddComponent(this.handleAddComponent.bind(this));
-        this.entityManager.onRemoveComponent(this.handleRemoveComponent.bind(this));
-    },
-
     start: function() {},
 
     tick: function() {},
 
     afterTick: function() {},
-
-    handleAddComponent: function(id) {
-        this.evaluateComponent(this.entityManager.getComponent(id));
-    },
-
-    handleRemoveComponent: function(id) {
-        this.evaluateComponent(this.entityManager.getComponent(id));
-    },
-
-    evaluateComponent: function(component) {
-        if (this.componentPredicate(component)) {
-            this.componentMap[component.id] = component;
-        } else {
-            delete this.componentMap[component.id];
-        }
-    },
 
     getGame: function() {
         return getGame();
@@ -1429,6 +1433,7 @@ var Console = require('./systems/console');
 var Physics = require('./systems/physics');
 
 var container = $('#container');
+
 var renderer = new Renderer(container, window);
 
 var inputManager = new InputManager();
@@ -1443,7 +1448,15 @@ var console = new Console();
 
 var physics = new Physics();
 
-module.exports = [renderer, inputManager, scriptManager, collision, lighting, console, physics];
+module.exports = {
+    renderer: renderer,
+    inputManager: inputManager,
+    scriptManager: scriptManager,
+    collision: collision,
+    lighting: lighting,
+    console: console,
+    physics: physics
+};
 },{"./systems/collision":28,"./systems/console":29,"./systems/inputmanager":30,"./systems/lighting":31,"./systems/physics":32,"./systems/renderer":33,"./systems/scriptmanager":34,"jquery":58}],28:[function(require,module,exports){
 var _ = require('lodash');
 
@@ -1464,13 +1477,13 @@ var Collision = function() {
 Collision.prototype = Object.create(System.prototype);
 Collision.prototype.constructor = Collision;
 
-Collision.prototype.tick = function() {
+Collision.prototype.tick = function(componentMap) {
     var raycaster = getCameraRaycaster();
 
     var bodies = [];
     //process mouse over
-    for (var id in this.componentMap) {
-        var body = this.componentMap[id];
+    for (var id in componentMap) {
+        var body = componentMap[id];
 
         if (body.object == null) {
             continue;
@@ -1592,15 +1605,22 @@ var InputManager = function(params) {
     }
 
     this.keyMap = null;
+
+    this.componentMap = {};
 };
 
 InputManager.prototype = Object.create(System.prototype);
 InputManager.prototype.constructor = InputManager;
 
-InputManager.prototype.start = function() {
+InputManager.prototype.start = function(componentMap) {
+    this.componentMap = componentMap;
     this.keyMap = this.getGame().keyMap;
     this.bindKeyMap();
     this.bindMouseFunc();
+};
+
+InputManager.prototype.tick = function(componentMap) {
+    this.componentMap = componentMap;
 };
 
 InputManager.prototype.bindKeyMap = function() {
@@ -1743,9 +1763,9 @@ Lighting.prototype.getLight = function(component) {
     }
 }
 
-Lighting.prototype.tick = function() {
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+Lighting.prototype.tick = function(componentMap) {
+    for (var id in componentMap) {
+        var component = componentMap[id];
 
         if (!component.addedToScene || component.needsUpdate) {
             var lights = this.lightMap[id];
@@ -1785,15 +1805,15 @@ Physics.prototype.start = function() {
 
 };
 
-Physics.prototype.tick = function() {
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+Physics.prototype.tick = function(componentMap) {
+    for (var id in componentMap) {
+        var component = componentMap[id];
         this.step(component);
     }
 };
 
 Physics.prototype.step = function(component) {
-	
+
 };
 
 module.exports = Physics;
@@ -1869,9 +1889,9 @@ Renderer.prototype.render = function() {
     this.renderer.render(this.scene, this.camera);
 };
 
-Renderer.prototype.tick = function() {
-    for (var id in this.componentMap) {
-        var renderComponent = this.componentMap[id];
+Renderer.prototype.tick = function(componentMap) {
+    for (var id in componentMap) {
+        var renderComponent = componentMap[id];
 
         if (renderComponent.needsUpdate || !renderComponent.addedToScene) {
             if (this.objectMap[id] != null) {
@@ -1933,9 +1953,9 @@ var ScriptManager = function() {
 ScriptManager.prototype = Object.create(System.prototype);
 ScriptManager.prototype.constructor = ScriptManager;
 
-ScriptManager.prototype.tick = function() {
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+ScriptManager.prototype.tick = function(componentMap) {
+    for (var id in componentMap) {
+        var component = componentMap[id];
 
         if (!component.started) {
             component.start();
@@ -1943,15 +1963,15 @@ ScriptManager.prototype.tick = function() {
         }
     }
 
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+    for (var id in componentMap) {
+        var component = componentMap[id];
         component.tick();
     };
 };
 
-ScriptManager.prototype.afterTick = function() {
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+ScriptManager.prototype.afterTick = function(componentMap) {
+    for (var id in componentMap) {
+        var component = componentMap[id];
         component.afterTick();
     };
 };

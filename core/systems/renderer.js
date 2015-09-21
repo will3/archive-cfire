@@ -69,9 +69,9 @@ Renderer.prototype.render = function() {
     this.renderer.render(this.scene, this.camera);
 };
 
-Renderer.prototype.tick = function() {
-    for (var id in this.componentMap) {
-        var renderComponent = this.componentMap[id];
+Renderer.prototype.tick = function(componentMap) {
+    for (var id in componentMap) {
+        var renderComponent = componentMap[id];
 
         if (renderComponent.needsUpdate || !renderComponent.addedToScene) {
             if (this.objectMap[id] != null) {

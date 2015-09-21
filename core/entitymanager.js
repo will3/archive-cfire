@@ -91,7 +91,7 @@ EntityManager.prototype = {
         };
 
         this.addComponentCallbacks.forEach(function(callback) {
-            callback(component.id);
+            callback(component);
         });
 
         return component;
@@ -104,10 +104,11 @@ EntityManager.prototype = {
         if (entityMap != null) {
             _.pull(entityMap.componentIds, id);
         }
+        var component = this.getComponent(id);
         delete this.componentMap[id];
 
         this.removeComponentCallbacks.forEach(function(callback) {
-            callback(id);
+            callback(component);
         });
     },
 

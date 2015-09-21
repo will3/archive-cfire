@@ -17,13 +17,13 @@ var Collision = function() {
 Collision.prototype = Object.create(System.prototype);
 Collision.prototype.constructor = Collision;
 
-Collision.prototype.tick = function() {
+Collision.prototype.tick = function(componentMap) {
     var raycaster = getCameraRaycaster();
 
     var bodies = [];
     //process mouse over
-    for (var id in this.componentMap) {
-        var body = this.componentMap[id];
+    for (var id in componentMap) {
+        var body = componentMap[id];
 
         if (body.object == null) {
             continue;

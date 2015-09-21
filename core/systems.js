@@ -9,6 +9,7 @@ var Console = require('./systems/console');
 var Physics = require('./systems/physics');
 
 var container = $('#container');
+
 var renderer = new Renderer(container, window);
 
 var inputManager = new InputManager();
@@ -23,4 +24,12 @@ var console = new Console();
 
 var physics = new Physics();
 
-module.exports = [renderer, inputManager, scriptManager, collision, lighting, console, physics];
+module.exports = {
+    renderer: renderer,
+    inputManager: inputManager,
+    scriptManager: scriptManager,
+    collision: collision,
+    lighting: lighting,
+    console: console,
+    physics: physics
+};

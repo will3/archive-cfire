@@ -14,9 +14,9 @@ var ScriptManager = function() {
 ScriptManager.prototype = Object.create(System.prototype);
 ScriptManager.prototype.constructor = ScriptManager;
 
-ScriptManager.prototype.tick = function() {
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+ScriptManager.prototype.tick = function(componentMap) {
+    for (var id in componentMap) {
+        var component = componentMap[id];
 
         if (!component.started) {
             component.start();
@@ -24,15 +24,15 @@ ScriptManager.prototype.tick = function() {
         }
     }
 
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+    for (var id in componentMap) {
+        var component = componentMap[id];
         component.tick();
     };
 };
 
-ScriptManager.prototype.afterTick = function() {
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+ScriptManager.prototype.afterTick = function(componentMap) {
+    for (var id in componentMap) {
+        var component = componentMap[id];
         component.afterTick();
     };
 };

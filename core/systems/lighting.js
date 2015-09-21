@@ -46,9 +46,9 @@ Lighting.prototype.getLight = function(component) {
     }
 }
 
-Lighting.prototype.tick = function() {
-    for (var id in this.componentMap) {
-        var component = this.componentMap[id];
+Lighting.prototype.tick = function(componentMap) {
+    for (var id in componentMap) {
+        var component = componentMap[id];
 
         if (!component.addedToScene || component.needsUpdate) {
             var lights = this.lightMap[id];

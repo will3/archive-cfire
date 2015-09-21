@@ -38,15 +38,22 @@ var InputManager = function(params) {
     }
 
     this.keyMap = null;
+
+    this.componentMap = {};
 };
 
 InputManager.prototype = Object.create(System.prototype);
 InputManager.prototype.constructor = InputManager;
 
-InputManager.prototype.start = function() {
+InputManager.prototype.start = function(componentMap) {
+    this.componentMap = componentMap;
     this.keyMap = this.getGame().keyMap;
     this.bindKeyMap();
     this.bindMouseFunc();
+};
+
+InputManager.prototype.tick = function(componentMap) {
+    this.componentMap = componentMap;
 };
 
 InputManager.prototype.bindKeyMap = function() {
