@@ -121,21 +121,6 @@ FormController.prototype.start = function() {
         inputController.setWireFrameHidden(!checked);
     });
 
-    form.ssaoCheckbox.change(function() {
-        var checked = $(this).is(":checked");
-        inputController.setSsao(checked);
-    });
-
-    form.onlyaoCheckbox.change(function() {
-        var checked = $(this).is(":checked");
-        inputController.setOnlyao(checked);
-    });
-
-    form.edgesCheckbox.change(function() {
-        var checked = $(this).is(":checked");
-        inputController.setEdges(checked);
-    });
-
     form.zoomInButton.click(function() {
         inputController.zoomIn();
     });

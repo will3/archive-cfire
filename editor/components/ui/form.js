@@ -12,9 +12,6 @@ module.exports = function() {
     var undoButton = $('#undo-button');
     var redoButton = $('#redo-button');
     var gridCheckbox = $('#grid-checkbox');
-    var ssaoCheckbox = $('#ssao-checkbox');
-    var onlyaoCheckbox = $('#onlyao-checkbox');
-    var edgesCheckbox = $('#edges-checkbox');
     var wireframeCheckbox = $('#wireframe-checkbox');
     var zoomInButton = $('#zoom-in-button');
     var zoomOutButton = $('#zoom-out-button');
@@ -29,9 +26,6 @@ module.exports = function() {
     assert.object(undoButton[0]);
     assert.object(redoButton[0]);
     assert.object(gridCheckbox[0]);
-    assert.object(ssaoCheckbox[0]);
-    assert.object(onlyaoCheckbox[0]);
-    assert.object(edgesCheckbox[0]);
 
     var form = {
         blockX: blockX,
@@ -44,9 +38,6 @@ module.exports = function() {
         undoButton: undoButton,
         redoButton: redoButton,
         gridCheckbox: gridCheckbox,
-        ssaoCheckbox: ssaoCheckbox,
-        onlyaoCheckbox: onlyaoCheckbox,
-        edgesCheckbox: edgesCheckbox,
         wireframeCheckbox: wireframeCheckbox,
         zoomInButton: zoomInButton,
         zoomOutButton: zoomOutButton

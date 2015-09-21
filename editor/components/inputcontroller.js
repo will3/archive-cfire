@@ -14,7 +14,6 @@ var PointerController = require('./pointercontroller');
 var AddBlock = require('./commands/addblock');
 var RemoveBlock = require('./commands/removeblock');
 var ResetChunk = require('./commands/resetchunk');
-
 var InputController = function() {
     Component.call(this);
 
@@ -43,7 +42,7 @@ var InputController = function() {
 
     this.pointerEnabled = true;
 
-    this.form = require('../ui/form')();
+    this.form = require('./ui/form')();
 };
 
 InputController.prototype = Object.create(Component.prototype);
@@ -117,21 +116,6 @@ InputController.prototype.setGridHidden = function(hidden) {
 
 InputController.prototype.setWireFrameHidden = function(hidden) {
     this.chunkController.setWireFrameHidden(hidden);
-};
-
-InputController.prototype.setSsao = function(value) {
-    this.root.renderer.ssao = value;
-    this.root.renderer.postprocessingNeedsUpdate = true;
-};
-
-InputController.prototype.setOnlyao = function(value) {
-    this.root.renderer.onlyAO = value;
-    this.root.renderer.postprocessingNeedsUpdate = true;
-};
-
-InputController.prototype.setEdges = function(value) {
-    this.root.renderer.edges = value;
-    this.root.renderer.postprocessingNeedsUpdate = true;
 };
 
 InputController.prototype.tick = function() {

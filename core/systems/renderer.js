@@ -36,23 +36,8 @@ var Renderer = function(container) {
 
     this.renderer = renderer;
 
-    //composers
-    this.edgeComposer = null;
-    this.diffuseComposer = null;
-
-    this.depthMaterial = null;
-
-    this.depthRenderTarget = null;
-
-    this.onlyAO = false;
-    this.ssao = true;
-    this.edges = true;
-    this.postprocessingNeedsUpdate = false;
-
     //set up resize
     resized(this.onWindowResize.bind(this));
-
-    this.initPostprocessing();
 };
 
 Renderer.prototype = Object.create(System.prototype);
@@ -65,80 +50,6 @@ Renderer.prototype.onWindowResize = function() {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
-
-    //re init postprocessing
-    this.initPostprocessing();
-};
-
-Renderer.prototype.initPostprocessing = function() {
-    //edge composer
-    this.edgeComposer = new THREE.EffectComposer(this.renderer);
-
-    //render pass
-    var renderPass = new THREE.RenderPass(this.edgeScene, this.camera);
-    this.edgeComposer.addPass(renderPass);
-
-    //edge using canny edge filter
-    var cannyEdge = new THREE.ShaderPass(THREE.CannyEdgeFilterPass);
-    this.edgeComposer.addPass(cannyEdge);
-
-    //invert edge
-    var invert = new THREE.ShaderPass(THREE.InvertThreshholdPass);
-    this.edgeComposer.addPass(invert);
-
-    //copy edges
-    var copyPass = new THREE.ShaderPass(THREE.CopyShader);
-    this.edgeComposer.addPass(copyPass);
-
-    // Setup depth pass
-    var depthShader = THREE.ShaderLib["depthRGBA"];
-    var depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
-
-    this.depthMaterial = new THREE.ShaderMaterial({
-        fragmentShader: depthShader.fragmentShader,
-        vertexShader: depthShader.vertexShader,
-        uniforms: depthUniforms,
-        blending: THREE.NoBlending
-    });
-
-    var pars = {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter
-    };
-    this.depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, pars);
-
-    //diffuse composer
-    this.diffuseComposer = new THREE.EffectComposer(this.renderer);
-
-    //render scene
-    var renderPass = new THREE.RenderPass(this.scene, this.camera);
-    this.diffuseComposer.addPass(renderPass);
-
-    if (this.ssao) {
-        //ssao
-        var ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
-        //this.uniforms[ "tDiffuse" ].value will be set by ShaderPass
-        ssaoPass.uniforms["tDepth"].value = this.depthRenderTarget;
-        ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
-        ssaoPass.uniforms['cameraNear'].value = this.camera.near;
-        ssaoPass.uniforms['cameraFar'].value = this.camera.far;
-        ssaoPass.uniforms['onlyAO'].value = this.onlyAO;
-        ssaoPass.uniforms['aoClamp'].value = 0.5;
-        ssaoPass.uniforms['lumInfluence'].value = 1.0;
-        this.diffuseComposer.addPass(ssaoPass);
-    }
-
-    if (this.edges) {
-        //blend with edge composer
-        var multiplyPass = new THREE.ShaderPass(THREE.MultiplyBlendShader);
-        multiplyPass.uniforms["tEdge"].value = this.edgeComposer.renderTarget2;
-        this.diffuseComposer.addPass(multiplyPass);
-    }
-
-    //copy to scene
-    var copyPass = new THREE.ShaderPass(THREE.CopyShader);
-    copyPass.renderToScreen = true;
-    this.diffuseComposer.addPass(copyPass);
 };
 
 Renderer.prototype.start = function() {
@@ -151,24 +62,7 @@ Renderer.prototype.animate = function() {
 };
 
 Renderer.prototype.render = function() {
-    if (this.postprocessingNeedsUpdate) {
-        this.initPostprocessing();
-        this.postprocessingNeedsUpdate = false;
-    }
-
-    if (this.edges) {
-        this.edgeComposer.render();
-    }
-
-    if (this.ssao) {
-        // Render depth into depthRenderTarget
-        this.scene.overrideMaterial = this.depthMaterial;
-        this.renderer.render(this.scene, this.camera, this.depthRenderTarget, true);
-        this.scene.overrideMaterial = null;
-    }
-
-    this.diffuseComposer.render();
-    // this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera);
 };
 
 Renderer.prototype.tick = function() {
@@ -202,12 +96,6 @@ Renderer.prototype.addObject = function(renderComponent) {
     var object = renderComponent.object;
     this.scene.add(object);
     var objects = [object];
-
-    if (renderComponent.hasEdges) {
-        var edgeObject = object.clone();
-        objects.push(edgeObject);
-        this.edgeScene.add(edgeObject);
-    }
 
     this.objectMap[renderComponent.id] = objects;
 };
