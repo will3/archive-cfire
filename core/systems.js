@@ -6,6 +6,7 @@ var ScriptManager = require('./systems/scriptmanager');
 var Collision = require('./systems/collision');
 var Lighting = require('./systems/lighting');
 var Console = require('./systems/console');
+var Physics = require('./systems/physics');
 
 var container = $('#container');
 var renderer = new Renderer(container, window);
@@ -20,4 +21,6 @@ var lighting = new Lighting(renderer);
 
 var console = new Console();
 
-module.exports = [renderer, inputManager, scriptManager, collision, lighting, console];
+var physics = new Physics();
+
+module.exports = [renderer, inputManager, scriptManager, collision, lighting, console, physics];

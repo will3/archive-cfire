@@ -5,4 +5,8 @@ router.get('/edit', function(req, res, next) {
     res.render('edit');
 });
 
+router.get('/', function(req, res, next) {
+    res.render('app');
+});
+
 module.exports = router;

@@ -1,11 +1,11 @@
-var runGame = require('../core/rungame');
+var Engine = require('../core/engine');
+var Game = Engine.Game;
 
 window.onload = function() {
-    runGame({
+    var game = new Game({
         scenario: require('./scenario'),
         types: {
             'GridController': require('./components/gridcontroller'),
-            'CameraController': require('./components/cameracontroller'),
             'InputController': require('./components/inputcontroller'),
             'ChunkController': require('./components/chunkcontroller'),
             'PointerController': require('./components/pointercontroller'),

@@ -4,11 +4,9 @@ var _ = require('lodash');
 var $ = require('jquery');
 
 var Component = require('../../core/component');
-var InputComponent = require('../../core/components/inputcomponent');
 
 var Grid = require('./gridcontroller');
 var ChunkController = require('./chunkcontroller');
-var CameraController = require('./cameracontroller');
 var PointerController = require('./pointercontroller');
 
 var AddBlock = require('./commands/addblock');
@@ -26,13 +24,8 @@ var InputController = function() {
 
     this.clickThreshold = 200;
     this.lastMousedownTime = null;
-    this.xSpeed = 0.004;
-    this.ySpeed = 0.004;
 
     this.isRemove = false;
-
-    this.lastX = null;
-    this.lastY = null;
 
     this.hasFocus = true;
 
@@ -54,34 +47,32 @@ InputController.prototype.start = function() {
     this.gridController = this.grid.getComponent(Grid);
     this.chunkController = this.getEntityByName('chunk').getComponent(ChunkController);
     this.input = this.getGame().input;
-    this.cameraController = this.getComponent(CameraController);
-    this.inputComponent = this.getComponent(InputComponent);
+    this.cameraController = this.getComponent('CameraController');
     this.pointerController = this.getEntityByName('pointer').getComponent(PointerController);
 
     assert.object(this.grid, 'grid');
     assert.object(this.chunkController, 'chunkController');
     assert.object(this.input, 'input');
-    assert.object(this.inputComponent, 'inputComponent');
     assert.object(this.pointerController, 'pointerController');
 
-    this.inputComponent.keydown('up', this.moveGridUp.bind(this));
-    this.inputComponent.keydown('down', this.moveGridDown.bind(this));
-    this.inputComponent.keydown('remove', this.removePressed.bind(this));
-    this.inputComponent.keyup('remove', this.removeReleased.bind(this));
-    this.inputComponent.keydown('grid', this.gridPressed.bind(this));
-    this.inputComponent.keydown('enter', this.enterInput.bind(this));
-    this.inputComponent.keydown('undo', this.undo.bind(this));
-    this.inputComponent.keydown('redo', this.redo.bind(this));
-    this.inputComponent.keydown('save', this.save.bind(this));
-    this.inputComponent.keydown('zoomin', this.zoomIn.bind(this));
-    this.inputComponent.keydown('zoomout', this.zoomOut.bind(this));
-    this.inputComponent.keydown('x', this.axisXPressed.bind(this));
-    this.inputComponent.keydown('y', this.axisYPressed.bind(this));
-    this.inputComponent.keydown('z', this.axisZPressed.bind(this));
+    this.bindKeyDown('up', this.moveGridUp.bind(this));
+    this.bindKeyDown('down', this.moveGridDown.bind(this));
+    this.bindKeyDown('remove', this.removePressed.bind(this));
+    this.bindKeyUp('remove', this.removeReleased.bind(this));
+    this.bindKeyDown('grid', this.gridPressed.bind(this));
+    this.bindKeyDown('enter', this.enterInput.bind(this));
+    this.bindKeyDown('undo', this.undo.bind(this));
+    this.bindKeyDown('redo', this.redo.bind(this));
+    this.bindKeyDown('save', this.save.bind(this));
+    this.bindKeyDown('zoomin', this.zoomIn.bind(this));
+    this.bindKeyDown('zoomout', this.zoomOut.bind(this));
+    this.bindKeyDown('x', this.axisXPressed.bind(this));
+    this.bindKeyDown('y', this.axisYPressed.bind(this));
+    this.bindKeyDown('z', this.axisZPressed.bind(this));
 
-    this.inputComponent.mousedown(this.onMousedown.bind(this));
-    this.inputComponent.mouseup(this.onMouseup.bind(this));
-    this.inputComponent.mousemove(this.onMousemove.bind(this));
+    this.bindMouseDown(this.onMousedown.bind(this));
+    this.bindMouseUp(this.onMouseup.bind(this));
+    this.bindMouseMove(this.onMousemove.bind(this));
 
     this.updateUndoButtons();
 };
@@ -129,14 +120,18 @@ InputController.prototype.tick = function() {
     }
 };
 
+InputController.prototype.onMousemove = function() {
+    if (this.root.input.mousehold) {
+        this.pointerEnabled = false;
+        this.pointerController.setVisible(false);
+    }
+};
+
 InputController.prototype.onMousedown = function() {
-    this.mousehold = true;
     this.lastMousedownTime = new Date().getTime();
 };
 
 InputController.prototype.onMouseup = function() {
-    this.mousehold = false;
-
     this.pointerEnabled = true;
     this.pointerController.setVisible(true);
 
@@ -201,30 +196,6 @@ InputController.prototype.getBlock = function() {
     };
 };
 
-InputController.prototype.onMousemove = function(e) {
-    if (this.lastX != null && this.lastY != null) {
-        if (this.mousehold) {
-            var dragX = e.x - this.lastX;
-            var dragY = e.y - this.lastY;
-
-            this.onMouseDrag(dragX, dragY);
-        }
-    }
-
-    this.lastX = e.x;
-    this.lastY = e.y;
-};
-
-InputController.prototype.onMouseDrag = function(dragX, dragY) {
-    this.cameraController.rotateCamera({
-        x: dragX * this.xSpeed,
-        y: dragY * this.ySpeed
-    });
-
-    this.pointerEnabled = false;
-    this.pointerController.setVisible(false);
-};
-
 InputController.prototype.runCommand = function(command) {
     command.run();
     this.commands.push(command);
@@ -271,7 +242,7 @@ InputController.prototype.save = function() {
     var blob = new Blob([JSON.stringify(json)], {
         type: "text/plain;charset=utf-8"
     });
-    require('filesaver.js').saveAs(blob, "block.cf");
+    require('filesaver.js').saveAs(blob, "block.json");
 };
 
 InputController.prototype.openFile = function(file) {

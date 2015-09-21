@@ -1,6 +1,7 @@
 require('../utils/loadthree');
 
 var $ = require('jquery');
+var assert = require('assert-plus');
 
 var RenderComponent = require('../components/rendercomponent');
 var CollisionBody = require('../components/collisionbody');
@@ -25,6 +26,7 @@ var Renderer = function(container) {
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     this.camera.rotation.order = 'YXZ';
+    this.camera.position.z = 100;
 
     var renderer = new THREE.WebGLRenderer({
         antialias: true
@@ -32,6 +34,8 @@ var Renderer = function(container) {
     renderer.setClearColor(0xffffff);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    assert.object(container[0], "container");
     container.append(renderer.domElement);
 
     this.renderer = renderer;

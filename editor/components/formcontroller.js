@@ -132,7 +132,7 @@ FormController.prototype.start = function() {
     filebutton
         .create({
             multiple: false,
-            accept: '.cf'
+            accept: '.json'
         })
         .on('fileinput', function(fileinput) {
             inputController.openFile(fileinput.files[0]);

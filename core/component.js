@@ -1,3 +1,4 @@
+var _ = require('lodash');
 var uuid = require('uuid-v4');
 var getGame = require('../core/macros/getgame');
 
@@ -5,6 +6,12 @@ var Component = function() {
     this.id = uuid();
     this.started = false;
     this.name = null;
+
+    //event bindings
+    this.bindings = [];
+    this.mousemoveFunc = [];
+    this.mousedownFunc = [];
+    this.mouseupFunc = [];
 };
 
 var defaultFunc = function() {};
@@ -22,6 +29,10 @@ Component.prototype = {
 
     getComponent: function(type) {
         return getGame().entityManager.getOwningEntity(this.id).getComponent(type);
+    },
+
+    getComponents: function() {
+        return getGame().entityManager.getOwningEntity(this.id).getComponents();
     },
 
     getOwningEntity: function() {
@@ -63,6 +74,55 @@ Component.prototype = {
 
             component[func](param);
         });
+    },
+
+    _bind: function(event, type, func) {
+        this.bindings.push({
+            type: type,
+            event: event,
+            func: func
+        });
+
+        this.root.inputManager.evaluateComponent(this);
+    },
+
+    bindKeyDown: function(event, func) {
+        if (_.isArray(event)) {
+            event.forEach(function(v) {
+                this.keydown(v, func);
+            }.bind(this));
+            return;
+        }
+
+        this._bind(event, 'keydown', func);
+        this.root.inputManager.evaluateComponent(this);
+    },
+
+    bindKeyUp: function(event, func) {
+        if (_.isArray(event)) {
+            event.forEach(function(v) {
+                this.keyup(v, func);
+            }.bind(this));
+            return;
+        }
+
+        this._bind(event, 'keyup', func);
+        this.root.inputManager.evaluateComponent(this);
+    },
+
+    bindMouseMove: function(func) {
+        this.mousemoveFunc.push(func);
+        this.root.inputManager.evaluateComponent(this);
+    },
+
+    bindMouseDown: function(func) {
+        this.mousedownFunc.push(func);
+        this.root.inputManager.evaluateComponent(this);
+    },
+
+    bindMouseUp: function(func) {
+        this.mouseupFunc.push(func);
+        this.root.inputManager.evaluateComponent(this);
     }
 };
 

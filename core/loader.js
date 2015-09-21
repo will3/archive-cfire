@@ -6,21 +6,40 @@ var Entity = require('./entity');
 
 module.exports = function(game) {
     var game = game;
+    var prefabs = {};
 
     return {
         load: function(data) {
             var self = this;
-            data.forEach(function(item) {
-                var entity = new Entity();
-                entity.name = item.name || null;
 
-                game.addEntity(entity);
+            prefabs = data.prefabs || {};
 
-                var components = item.components;
+            var entities = data.entities || [];
+            entities.forEach(function(item) {
+                if (_.isString(item)) {
+                    var prefab = prefabs[item];
+                    if (prefab == null) {
+                        throw "cannot find prefab: " + item
+                    }
 
-                components.forEach(function(component) {
-                    entity.addComponent(self.getComponent(component));
-                });
+                    self.addEntity(game, prefab);
+                    return;
+                }
+
+                self.addEntity(game, item);
+            });
+        },
+
+        addEntity: function(game, item) {
+            var entity = new Entity();
+            entity.name = item.name || null;
+
+            game.addEntity(entity);
+
+            var components = item.components || [];
+            var self = this;
+            components.forEach(function(component) {
+                entity.addComponent(self.getComponent(component));
             });
         },
 
@@ -31,6 +50,9 @@ module.exports = function(game) {
             } else {
                 var type = data.type;
                 var constructor = types[type];
+                if (constructor == null) {
+                    throw "cannot find type: " + type;
+                }
                 var component = new constructor();
 
                 var properties = _.cloneDeep(data);

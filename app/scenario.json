@@ -1,0 +1,18 @@
+{
+    "prefabs": {
+        "frigate": {
+            "name": "frigate",
+            "components": [{
+                "type": "BlockModel",
+                "modelName": "frigate"
+            }, "RenderComponent", "ShipController", "RigidBody"]
+        }
+    },
+    "entities": ["frigate", {
+        "name": "game",
+        "components": [
+            "CameraController",
+            "InputController"
+        ]
+    }]
+}

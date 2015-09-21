@@ -6,7 +6,6 @@ try {
     console.log('failed to load MouseTrap');
 }
 
-var InputComponent = require('../components/inputcomponent');
 var System = require('../system');
 var InputState = require('../inputstate');
 
@@ -35,7 +34,7 @@ var InputManager = function(params) {
     };
 
     this.componentPredicate = function(component) {
-        return component instanceof InputComponent;
+        return component.bindings.length > 0 || component.mousemoveFunc.length > 0 || component.mousedownFunc.length > 0 || component.mouseupFunc.length > 0;
     }
 
     this.keyMap = null;
@@ -95,6 +94,8 @@ InputManager.prototype.bindKeyMap = function() {
 };
 
 InputManager.prototype.handleMousedown = function(e) {
+    this.inputState.mousehold = true;
+
     for (var id in this.componentMap) {
         var component = this.componentMap[id];
         component.mousedownFunc.forEach(function(func) {
@@ -104,6 +105,8 @@ InputManager.prototype.handleMousedown = function(e) {
 };
 
 InputManager.prototype.handleMouseup = function() {
+    this.inputState.mousehold = false;
+
     for (var id in this.componentMap) {
         var component = this.componentMap[id];
         component.mouseupFunc.forEach(function(func) {

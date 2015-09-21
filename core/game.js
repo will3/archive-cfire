@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var $ = require('jquery');
+var extend = require('extend');
 
 var InputState = require('./inputstate');
 var EntityManager = require('./entitymanager');
@@ -19,6 +20,8 @@ var Game = function(params) {
     params = params || {};
 
     this.keyMap = params.keyMap;
+    this.tickRate = params.tickRate || 60.0;
+    this.scenario = params.scenario;
 
     this.entityManager = new EntityManager();
 
@@ -33,10 +36,34 @@ var Game = function(params) {
 
     this.systems = params.systems || require('./systems');
 
+    var self = this;
+    this.systems.forEach(function(system) {
+        system.setEntityManager(self.entityManager);
+    });
+
     this.renderer = this.getSystem(Renderer);
     this.inputManager = this.getSystem(InputManager);
     this.collision = this.getSystem(Collision);
     this.console = this.getSystem(Console);
+
+    extend(require('./macros/types'), params.types || {});
+
+    if (this.scenario != null) {
+        this.load(this.scenario);
+    }
+
+    //disable right click
+    document.oncontextmenu = document.body.oncontextmenu = function() {
+        return false;
+    }
+
+    var interval = function() {
+        self.tick(1000.0 / self.tickRate);
+        self.afterTick();
+        setTimeout(interval, 1000.0 / self.tickRate);
+    }
+
+    interval();
 };
 
 Game.prototype = {
@@ -58,18 +85,6 @@ Game.prototype = {
         return _.find(this.systems, function(system) {
             return system instanceof type;
         });
-    },
-
-    start: function() {
-        var self = this;
-        this.systems.forEach(function(system) {
-            system.setEntityManager(self.entityManager);
-        });
-
-        //disable right click
-        document.oncontextmenu = document.body.oncontextmenu = function() {
-            return false;
-        }
     },
 
     tick: function(elapsedTime) {

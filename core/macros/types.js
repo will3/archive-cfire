@@ -1,9 +1,10 @@
 var types = {
     'CollisionBody': require('../components/collisionbody'),
-    'InputComponent': require('../components/inputcomponent'),
     'LightComponent': require('../components/lightcomponent'),
     'RenderComponent': require('../components/rendercomponent'),
-    'TransformComponent': require('../components/transformcomponent')
+    'TransformComponent': require('../components/transformcomponent'),
+    'CameraController': require('../components/cameracontroller'),
+    'RigidBody': require('../components/rigidbody')
 };
 
 module.exports = types;

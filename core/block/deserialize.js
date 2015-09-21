@@ -16,7 +16,7 @@ module.exports = function(json) {
         var y = components[1];
         var z = components[2];
         var index = components[3];
-
+        
         chunk.add(parseInt(x), parseInt(y), parseInt(z), blocks[index]);
     }
 
