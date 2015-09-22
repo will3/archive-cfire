@@ -15,7 +15,8 @@ describe('Game', function() {
 
         game = new Game({
             systems: systems,
-            container: container
+            container: container,
+            autoStart: false
         });
     });
 

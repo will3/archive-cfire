@@ -33,7 +33,9 @@ BlockModel.prototype.start = function() {
     switch (this.modelName) {
         case 'frigate':
             {
-                object = mesh(deserialize(frigate));
+                object = mesh(deserialize(frigate), {
+                    gridSize: 1
+                });
                 break;
             }
     }
@@ -44,7 +46,7 @@ BlockModel.prototype.start = function() {
 };
 
 module.exports = BlockModel;
-},{"../../core/engine":18,"../resources/models/frigate.json":5,"assert-plus":38}],2:[function(require,module,exports){
+},{"../../core/engine":19,"../resources/models/frigate.json":6,"assert-plus":39}],2:[function(require,module,exports){
 var assert = require('assert-plus');
 
 var Engine = require('../../core/engine');
@@ -64,7 +66,7 @@ InputController.prototype.start = function(){
 };
 
 module.exports = InputController;
-},{"../../core/engine":18,"assert-plus":38}],3:[function(require,module,exports){
+},{"../../core/engine":19,"assert-plus":39}],3:[function(require,module,exports){
 var assert = require('assert-plus');
 var clamp = require('clamp');
 
@@ -92,12 +94,12 @@ ShipController.prototype.start = function() {
     this.rigidBody = this.getComponent('RigidBody');
     assert.object(this.rigidBody, 'rigidBody');
 
-    this.rigidBody.mass = 10;
+    this.rigidBody.mass = 100;
 };
 
 ShipController.prototype.tick = function() {
     this.accelerate(1);
-    this.bank(0.1);
+    this.bank(1);
 
     //update yaw with bank
     var rotation = this.transform.rotation;
@@ -118,7 +120,42 @@ ShipController.prototype.bank = function(amount) {
 };
 
 module.exports = ShipController;
-},{"../../core/engine":18,"assert-plus":38,"clamp":39}],4:[function(require,module,exports){
+},{"../../core/engine":19,"assert-plus":39,"clamp":40}],4:[function(require,module,exports){
+var THREE = require('three');
+
+var Engine = require('../../core/engine');
+var Component = Engine.Component;
+
+var SmokeTrail = function() {
+    Component.call(this);
+
+    this.emitInterval = 100;
+};
+
+SmokeTrail.prototype = Object.create(Component.prototype);
+SmokeTrail.prototype.constructor = SmokeTrail;
+
+SmokeTrail.prototype.start = function() {
+    setInterval(this.emit.bind(this), this.emitInterval);
+};
+
+SmokeTrail.prototype.emit = function() {
+    // var smoke = this.addEntityFromPrefab("smoke");
+    // var renderComponent = smoke.getComponent('RenderComponent');
+    // var map = THREE.ImageUtils.loadTexture("images/default.png");
+    // var material = new THREE.SpriteMaterial({
+    //     map: map,
+    //     color: 0xffffff
+    // });
+
+    // var sprite = new THREE.Sprite(material);
+    // sprite.position = new THREE.Vector3();
+    // sprite.scale = new THREE.Vector3(2, 2, 2);
+    // renderComponent.object = sprite;
+};
+
+module.exports = SmokeTrail;
+},{"../../core/engine":19,"three":62}],5:[function(require,module,exports){
 var Engine = require('../core/engine');
 var Game = Engine.Game;
 
@@ -128,11 +165,14 @@ window.onload = function() {
         types: {
             'BlockModel': require('./components/blockmodel'),
             'InputController': require('./components/inputcontroller'),
-            'ShipController': require('./components/shipcontroller')
+            'ShipController': require('./components/shipcontroller'),
+            'SmokeTrail': require('./components/smoketrail')
         }
     });
 
-    for (var i = 0; i < 500; i++) {
+    game.renderer.setClearColor(0x000000);
+
+    for (var i = 0; i < 1; i++) {
         var frigate = game.addEntityFromPrefab('frigate');
         frigate.transform.position.x = Math.random() * 1000 - 500;
         frigate.transform.position.y = Math.random() * 1000 - 500;
@@ -140,18 +180,20 @@ window.onload = function() {
     }
 
 }
-},{"../core/engine":18,"./components/blockmodel":1,"./components/inputcontroller":2,"./components/shipcontroller":3,"./scenario.json":6}],5:[function(require,module,exports){
-module.exports=﻿[[{"scale":{"x":1,"y":1,"z":1},"color":3946549},{"scale":{"x":1,"y":0.75,"z":1},"color":3946549},{"scale":{"x":0.4,"y":0.4,"z":1},"color":3946549},{"scale":{"x":0.8,"y":0.8,"z":1},"color":3946549},{"scale":{"x":1,"y":0.5,"z":1},"color":3946549}],"0,0,2,0","1,0,1,0","1,0,2,0","1,0,3,0","2,0,2,1","3,0,0,2","3,0,1,3","3,0,2,0","3,0,3,0","3,0,4,0","4,0,2,4","5,0,2,4","-4,0,2,4","-3,0,0,2","-3,0,1,3","-3,0,2,0","-3,0,3,0","-3,0,4,0","-2,0,2,1","-1,0,1,0","-1,0,2,0","-1,0,3,0","-5,0,2,4"]
-},{}],6:[function(require,module,exports){
-module.exports=module.exports={
+},{"../core/engine":19,"./components/blockmodel":1,"./components/inputcontroller":2,"./components/shipcontroller":3,"./components/smoketrail":4,"./scenario.json":7}],6:[function(require,module,exports){
+module.exports=﻿[[{"scale":{"x":1,"y":1,"z":1},"color":16777215},{"scale":{"x":1,"y":0.75,"z":1},"color":16777215},{"scale":{"x":0.4,"y":0.4,"z":1},"color":16777215},{"scale":{"x":0.8,"y":0.8,"z":1},"color":16777215},{"scale":{"x":1,"y":0.5,"z":1},"color":16777215}],"0,0,2,0","1,0,1,0","1,0,2,0","1,0,3,0","2,0,2,1","3,0,0,2","3,0,1,3","3,0,2,0","3,0,3,0","3,0,4,0","4,0,2,4","5,0,2,4","-4,0,2,4","-3,0,0,2","-3,0,1,3","-3,0,2,0","-3,0,3,0","-3,0,4,0","-2,0,2,1","-1,0,1,0","-1,0,2,0","-1,0,3,0","-5,0,2,4"]
+},{}],7:[function(require,module,exports){
+module.exports={
     "prefabs": {
         "frigate": {
-            "name": "frigate",
             "components": [{
                 "type": "BlockModel",
                 "modelName": "frigate"
-            }, "RenderComponent", "ShipController", "RigidBody"]
-        }
+            }, "RenderComponent", "ShipController", "RigidBody", "SmokeTrail"]
+        },
+        "smoke": {
+            "components": ["RenderComponent"]
+        },
     },
     "entities": ["frigate", {
         "name": "game",
@@ -161,7 +203,7 @@ module.exports=module.exports={
         ]
     }]
 }
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 //params
 //data  if not empty, populates map with data, defaults to null
 var Chunk = function(params) {
@@ -239,7 +281,7 @@ Chunk.prototype = {
 }
 
 module.exports = Chunk;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var Chunk = require('./chunk');
 
 module.exports = function(json) {
@@ -264,7 +306,7 @@ module.exports = function(json) {
 
     return chunk;
 };
-},{"./chunk":7}],9:[function(require,module,exports){
+},{"./chunk":8}],10:[function(require,module,exports){
 var THREE = require('three');
 var _ = require('lodash');
 
@@ -415,11 +457,13 @@ var hashVertice = function(vertice, multiple) {
 //gridSize  grid size to use
 //faceMap   if not empty, populate this instance with face mapping info
 //edges     if not empty, populate this with Line3 array
+//ouputGeometry    output THREE.Geometry instead of THREE.BufferGeometry if set to true, defaults to false
 module.exports = function(chunk, params) {
     params = params || {};
     var meshers = params.meshers || {};
     var gridSize = params.gridSize || 10;
     var gap = params.gap || 0.0;
+    var ouputGeometry = params.ouputGeometry || true;
 
     var geometry = new THREE.Geometry();
 
@@ -511,11 +555,15 @@ module.exports = function(chunk, params) {
 
     var material = new THREE.MeshFaceMaterial(materials);
 
-    var object = new THREE.Mesh(new THREE.BufferGeometry().fromGeometry(geometry), material);
+    if (!ouputGeometry) {
+        geometry = new THREE.BufferGeometry().fromGeometry(geometry);
+    }
+
+    var object = new THREE.Mesh(geometry, material);
 
     return object;
 };
-},{"lodash":59,"three":61}],10:[function(require,module,exports){
+},{"lodash":60,"three":62}],11:[function(require,module,exports){
 _ = require('lodash');
 
 module.exports = function(chunk) {
@@ -544,7 +592,7 @@ module.exports = function(chunk) {
 
     return data;
 };
-},{"lodash":59}],11:[function(require,module,exports){
+},{"lodash":60}],12:[function(require,module,exports){
 var _ = require('lodash');
 var uuid = require('uuid-v4');
 var getGame = require('../core/macros/getgame');
@@ -576,23 +624,31 @@ Component.prototype = {
 
     afterTick: defaultFunc,
 
-    getComponent: function(type) {
-        return getGame().entityManager.getOwningEntity(this.id).getComponent(type);
+    getComponents: function() {
+        return this.getOwningEntity.getComponents();
     },
 
-    getComponents: function() {
-        return getGame().entityManager.getOwningEntity(this.id).getComponents();
+    getComponent: function(type) {
+        return this.getOwningEntity().getComponent(type);
+    },
+
+    getEntityByName: function(name) {
+        return getGame().entityManager.getEntityByName(name);
     },
 
     getOwningEntity: function() {
         return getGame().entityManager.getOwningEntity(this.id);
     },
 
+    getParentEntity: function() {
+        return getGame().entityManager.getParentEntity(this.getOwningEntity().id);
+    },
+
     get transform() {
-        if(this._transform == null){
+        if (this._transform == null) {
             this._transform = getGame().entityManager.getOwningEntity(this.id).transform;
         }
-        
+
         return this._transform;
     },
 
@@ -600,12 +656,19 @@ Component.prototype = {
         return this.getGame();
     },
 
-    getGame: function() {
-        return getGame();
+    getWorldPosition: function() {
+        var position = this.transform.position;
+
+        var parentEntity = this.getParentEntity();
+        if (parentEntity == null) {
+            return position;
+        }
+
+        return position + this.getParentEntity().worldPosition;
     },
 
-    getEntityByName: function(name) {
-        return getGame().entityManager.getEntityByName(name);
+    getGame: function() {
+        return getGame();
     },
 
     getComponentByName: function(name) {
@@ -629,6 +692,7 @@ Component.prototype = {
         });
     },
 
+    //events
     _bind: function(event, type, func) {
         this.bindings.push({
             type: type,
@@ -676,11 +740,15 @@ Component.prototype = {
     bindMouseUp: function(func) {
         this.mouseupFunc.push(func);
         this.root.evaluateComponent(this);
+    },
+
+    addEntityFromPrefab: function(prefab){
+        return this.root.addEntityFromPrefab(prefab);
     }
 };
 
 module.exports = Component;
-},{"../core/macros/getgame":24,"lodash":59,"uuid-v4":62}],12:[function(require,module,exports){
+},{"../core/macros/getgame":25,"lodash":60,"uuid-v4":63}],13:[function(require,module,exports){
 var THREE = require('three');
 var Component = require('../../core/component');
 var clamp = require('clamp');
@@ -688,7 +756,7 @@ var clamp = require('clamp');
 var CameraController = function() {
     Component.call(this);
 
-    this.distance = 1000;
+    this.distance = 100;
 
     this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');
     this.lookAt = new THREE.Vector3(0, 0, 0);
@@ -760,7 +828,7 @@ CameraController.prototype.updatePosition = function() {
 };
 
 module.exports = CameraController;
-},{"../../core/component":11,"clamp":39,"three":61}],13:[function(require,module,exports){
+},{"../../core/component":12,"clamp":40,"three":62}],14:[function(require,module,exports){
 var Component = require('../component');
 
 var CollisionBody = function() {
@@ -774,7 +842,7 @@ CollisionBody.prototype = Object.create(Component.prototype);
 CollisionBody.prototype.constructor = CollisionBody;
 
 module.exports = CollisionBody;
-},{"../component":11}],14:[function(require,module,exports){
+},{"../component":12}],15:[function(require,module,exports){
 var Component = require('../component');
 
 var LightComponent = function() {
@@ -801,7 +869,7 @@ LightComponent.prototype = Object.create(Component.prototype);
 LightComponent.prototype.constructor = LightComponent;
 
 module.exports = LightComponent;
-},{"../component":11}],15:[function(require,module,exports){
+},{"../component":12}],16:[function(require,module,exports){
 var Component = require('../component');
 var THREE = require('three');
 
@@ -840,7 +908,7 @@ Object.defineProperty(RenderComponent.prototype, 'object', {
 });
 
 module.exports = RenderComponent;
-},{"../component":11,"three":61}],16:[function(require,module,exports){
+},{"../component":12,"three":62}],17:[function(require,module,exports){
 var assert = require('assert-plus');
 var THREE = require('three');
 
@@ -870,7 +938,7 @@ RigidBody.prototype.applyForce = function(force) {
 };
 
 module.exports = RigidBody;
-},{"../component":11,"assert-plus":38,"three":61}],17:[function(require,module,exports){
+},{"../component":12,"assert-plus":39,"three":62}],18:[function(require,module,exports){
 var Component = require('../component');
 var THREE = require('three');
 
@@ -886,7 +954,7 @@ TransformComponent.prototype = Object.create(Component.prototype);
 TransformComponent.prototype.constructor = TransformComponent;
 
 module.exports = TransformComponent;
-},{"../component":11,"three":61}],18:[function(require,module,exports){
+},{"../component":12,"three":62}],19:[function(require,module,exports){
 var Engine = {
     Game: require('./game'),
     Component: require('./component'),
@@ -906,7 +974,30 @@ var Engine = {
 };
 
 module.exports = Engine;
-},{"./block/chunk":7,"./block/deserialize":8,"./block/mesh":9,"./block/serialize":10,"./component":11,"./components/cameracontroller":12,"./components/collisionbody":13,"./components/lightcomponent":14,"./components/rendercomponent":15,"./components/transformcomponent":17,"./game":21}],19:[function(require,module,exports){
+
+// var _ = require('lodash');
+// var extend = require('extend');
+
+// var Game = require('./game');
+// var Component = require('./component');
+
+// engine.start = function() {
+//     var game = new Game();
+//     game.start();
+// };
+
+// var components = {};
+// engine.registerComponent = function(name, func) {
+//     if (_.isFunction(func)) {
+//         this.components[name] = extend(new Component(), func());
+//         return;
+//     }
+
+//     this.components[name] = extend(new Component(), func);
+// };
+
+// module.exports = engine;
+},{"./block/chunk":8,"./block/deserialize":9,"./block/mesh":10,"./block/serialize":11,"./component":12,"./components/cameracontroller":13,"./components/collisionbody":14,"./components/lightcomponent":15,"./components/rendercomponent":16,"./components/transformcomponent":18,"./game":22}],20:[function(require,module,exports){
 var uuid = require('uuid-v4');
 var _ = require('lodash');
 
@@ -960,6 +1051,7 @@ Entity.prototype = {
         }
 
         if (_.isString(type)) {
+            var types = require('./macros/types');
             var constructor = types[type];
             if (constructor != null) {
                 return _.find(this.getComponents(), function(component) {
@@ -973,15 +1065,11 @@ Entity.prototype = {
 
     getComponents: function() {
         return getGame().entityManager.getComponents(this.id);
-    },
-
-    getEntityByName: function(name) {
-        return getGame().entityManager.getEntityByName(name);
     }
 }
 
 module.exports = Entity;
-},{"./components/transformcomponent":17,"./macros/getgame":24,"./macros/types":25,"lodash":59,"uuid-v4":62}],20:[function(require,module,exports){
+},{"./components/transformcomponent":18,"./macros/getgame":25,"./macros/types":26,"lodash":60,"uuid-v4":63}],21:[function(require,module,exports){
 var _ = require('lodash');
 
 var EntityManager = function() {
@@ -1147,7 +1235,7 @@ EntityManager.prototype = {
 };
 
 module.exports = EntityManager;
-},{"lodash":59}],21:[function(require,module,exports){
+},{"lodash":60}],22:[function(require,module,exports){
 var _ = require('lodash');
 var $ = require('jquery');
 var extend = require('extend');
@@ -1164,7 +1252,8 @@ var Console = require('./systems/console');
 //params
 //systems: systems this game should run, creates default set if left empty
 //keyMap: key map
-//types: type bindings
+//types: type bindings,
+//autoStart: automatically calls start when game is created, defaults to true
 var Game = function(params) {
     params = params || {};
 
@@ -1199,8 +1288,11 @@ var Game = function(params) {
     //map of component(s) relevant for systems
     this.componentMap = {};
 
-    //auto start
-    this.start();
+    var autoStart = params.autoStart || true;
+
+    if (params.autoStart !== false) {
+        this.start();
+    }
 };
 
 Game.prototype = {
@@ -1232,7 +1324,10 @@ Game.prototype = {
                     map = this.componentMap[key] = {};
                 }
 
-                delete map[component.id];
+                if (map[component.id] != null) {
+                    system.destroyComponent(component);
+                    delete map[component.id];
+                }
             }
         }.bind(this));
 
@@ -1321,7 +1416,7 @@ Game.prototype = {
 };
 
 module.exports = Game;
-},{"./entitymanager":20,"./inputstate":22,"./loader":23,"./macros/getgame":24,"./macros/types":25,"./systems":27,"./systems/collision":28,"./systems/console":29,"./systems/inputmanager":30,"./systems/renderer":33,"extend":40,"jquery":58,"lodash":59}],22:[function(require,module,exports){
+},{"./entitymanager":21,"./inputstate":23,"./loader":24,"./macros/getgame":25,"./macros/types":26,"./systems":28,"./systems/collision":29,"./systems/console":30,"./systems/inputmanager":31,"./systems/renderer":34,"extend":41,"jquery":59,"lodash":60}],23:[function(require,module,exports){
 var _ = require('lodash');
 
 var InputState = function() {
@@ -1366,7 +1461,7 @@ InputState.prototype = {
 }
 
 module.exports = InputState;
-},{"lodash":59}],23:[function(require,module,exports){
+},{"lodash":60}],24:[function(require,module,exports){
 var _ = require('lodash');
 var extend = require('extend');
 var types = require('./macros/types');
@@ -1438,7 +1533,7 @@ module.exports = function(game) {
         }
     };
 };
-},{"./entity":19,"./macros/types":25,"extend":40,"lodash":59}],24:[function(require,module,exports){
+},{"./entity":20,"./macros/types":26,"extend":41,"lodash":60}],25:[function(require,module,exports){
 var game = null;
 
 module.exports = function() {
@@ -1448,7 +1543,7 @@ module.exports = function() {
 module.exports.register = function(value) {
     game = value;
 }
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var types = {
     'CollisionBody': require('../components/collisionbody'),
     'LightComponent': require('../components/lightcomponent'),
@@ -1459,7 +1554,7 @@ var types = {
 };
 
 module.exports = types;
-},{"../components/cameracontroller":12,"../components/collisionbody":13,"../components/lightcomponent":14,"../components/rendercomponent":15,"../components/rigidbody":16,"../components/transformcomponent":17}],26:[function(require,module,exports){
+},{"../components/cameracontroller":13,"../components/collisionbody":14,"../components/lightcomponent":15,"../components/rendercomponent":16,"../components/rigidbody":17,"../components/transformcomponent":18}],27:[function(require,module,exports){
 var getGame = require('./macros/getgame');
 
 var System = function(entityManager) {
@@ -1479,9 +1574,14 @@ System.prototype = {
 
     start: function() {},
 
-    tick: function() {},
+    //tick
+    tick: function(componentMap) {},
 
+    //called after tick
     afterTick: function() {},
+
+    //destroy component, called when component is removed
+    destroyComponent: function() {},
 
     getGame: function() {
         return getGame();
@@ -1489,7 +1589,7 @@ System.prototype = {
 };
 
 module.exports = System;
-},{"./macros/getgame":24}],27:[function(require,module,exports){
+},{"./macros/getgame":25}],28:[function(require,module,exports){
 var $ = require('jquery');
 
 var Renderer = require('./systems/renderer');
@@ -1525,7 +1625,7 @@ module.exports = {
     console: console,
     physics: physics
 };
-},{"./systems/collision":28,"./systems/console":29,"./systems/inputmanager":30,"./systems/lighting":31,"./systems/physics":32,"./systems/renderer":33,"./systems/scriptmanager":34,"jquery":58}],28:[function(require,module,exports){
+},{"./systems/collision":29,"./systems/console":30,"./systems/inputmanager":31,"./systems/lighting":32,"./systems/physics":33,"./systems/renderer":34,"./systems/scriptmanager":35,"jquery":59}],29:[function(require,module,exports){
 var _ = require('lodash');
 
 var System = require('../system');
@@ -1575,7 +1675,7 @@ Collision.prototype.tick = function(componentMap) {
 };
 
 module.exports = Collision;
-},{"../components/collisionbody":13,"../system":26,"../utils/getmouseraycaster":35,"lodash":59}],29:[function(require,module,exports){
+},{"../components/collisionbody":14,"../system":27,"../utils/getmouseraycaster":36,"lodash":60}],30:[function(require,module,exports){
 var _ = require('lodash');
 var $ = require('jquery');
 
@@ -1632,7 +1732,7 @@ Console.prototype.updateLayout = function() {
 };
 
 module.exports = Console;
-},{"../system":26,"jquery":58,"lodash":59}],30:[function(require,module,exports){
+},{"../system":27,"jquery":59,"lodash":60}],31:[function(require,module,exports){
 var $ = require('jquery');
 var _ = require('lodash');
 try {
@@ -1782,7 +1882,7 @@ InputManager.prototype.afterTick = function() {
 };
 
 module.exports = InputManager;
-},{"../inputstate":22,"../system":26,"jquery":58,"lodash":59,"mousetrap":60}],31:[function(require,module,exports){
+},{"../inputstate":23,"../system":27,"jquery":59,"lodash":60,"mousetrap":61}],32:[function(require,module,exports){
 var THREE = require('three');
 var System = require('../system');
 var LightComponent = require('../components/lightcomponent');
@@ -1854,7 +1954,7 @@ Lighting.prototype.tick = function(componentMap) {
 };
 
 module.exports = Lighting;
-},{"../components/lightcomponent":14,"../system":26,"three":61}],32:[function(require,module,exports){
+},{"../components/lightcomponent":15,"../system":27,"three":62}],33:[function(require,module,exports){
 var System = require('../system');
 var RigidBody = require('../components/rigidbody');
 
@@ -1889,7 +1989,7 @@ Physics.prototype.stepComponent = function(component) {
 };
 
 module.exports = Physics;
-},{"../components/rigidbody":16,"../system":26}],33:[function(require,module,exports){
+},{"../components/rigidbody":17,"../system":27}],34:[function(require,module,exports){
 require('../utils/loadthree');
 
 var $ = require('jquery');
@@ -1920,10 +2020,12 @@ var Renderer = function(container) {
     this.camera.rotation.order = 'YXZ';
     this.camera.position.z = 100;
 
+    this.clearColor = 0xffffff;
+
     var renderer = new THREE.WebGLRenderer({
         antialias: true
     });
-    renderer.setClearColor(0xffffff);
+    renderer.setClearColor(this.clearColor);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -1938,6 +2040,10 @@ var Renderer = function(container) {
 
 Renderer.prototype = Object.create(System.prototype);
 Renderer.prototype.constructor = Renderer;
+
+Renderer.prototype.setClearColor = function(value) {
+    this.renderer.setClearColor(value);
+};
 
 Renderer.prototype.onWindowResize = function() {
     var width = window.innerWidth;
@@ -1967,10 +2073,10 @@ Renderer.prototype.tick = function(componentMap) {
 
         if (renderComponent.needsUpdate || !renderComponent.addedToScene) {
             if (this.objectMap[id] != null) {
-                this.removeObject(renderComponent);
+                this.removeObject3D(renderComponent);
             }
             if (renderComponent.object != null) {
-                this.addObject(renderComponent);
+                this.addObject3D(renderComponent);
             }
 
             renderComponent.addedToScene = true;
@@ -1988,7 +2094,11 @@ Renderer.prototype.tick = function(componentMap) {
     }
 };
 
-Renderer.prototype.addObject = function(renderComponent) {
+Renderer.prototype.destroyComponent = function(component) {
+    this.removeObject3D(component);
+};
+
+Renderer.prototype.addObject3D = function(renderComponent) {
     var object = renderComponent.object;
     this.scene.add(object);
     var objects = [object];
@@ -1996,7 +2106,7 @@ Renderer.prototype.addObject = function(renderComponent) {
     this.objectMap[renderComponent.id] = objects;
 };
 
-Renderer.prototype.removeObject = function(renderComponent) {
+Renderer.prototype.removeObject3D = function(renderComponent) {
     var objects = this.objectMap[renderComponent.id];
     if (objects == null) {
         return;
@@ -2008,7 +2118,7 @@ Renderer.prototype.removeObject = function(renderComponent) {
 };
 
 module.exports = Renderer;
-},{"../components/collisionbody":13,"../components/rendercomponent":15,"../system":26,"../utils/loadthree":36,"../utils/resized":37,"assert-plus":38,"jquery":58,"three":61}],34:[function(require,module,exports){
+},{"../components/collisionbody":14,"../components/rendercomponent":16,"../system":27,"../utils/loadthree":37,"../utils/resized":38,"assert-plus":39,"jquery":59,"three":62}],35:[function(require,module,exports){
 var System = require('../system');
 
 //script manager manages custom components
@@ -2016,9 +2126,9 @@ var ScriptManager = function() {
     System.call(this);
 
     this.componentPredicate = function(component) {
-        return component.start != component.defaultFunc ||
+        return (component.start != component.defaultFunc ||
             component.tick != component.defaultFunc ||
-            component.afterTick != component.defaultFunc;
+            component.afterTick != component.defaultFunc);
     }
 };
 
@@ -2049,7 +2159,7 @@ ScriptManager.prototype.afterTick = function(componentMap) {
 };
 
 module.exports = ScriptManager;
-},{"../system":26}],35:[function(require,module,exports){
+},{"../system":27}],36:[function(require,module,exports){
 var THREE = require('three');
 var getGame = require('../macros/getgame');
 
@@ -2068,7 +2178,7 @@ module.exports = function() {
 
     return raycaster;
 }
-},{"../macros/getgame":24,"three":61}],36:[function(require,module,exports){
+},{"../macros/getgame":25,"three":62}],37:[function(require,module,exports){
 if (typeof window === 'undefined') {
     return;
 }
@@ -2087,7 +2197,8 @@ require('../../three/postprocessing/RenderPass.js');
 require('../../three/postprocessing/ShaderPass.js');
 require('../../three/postprocessing/MaskPass.js');
 require('../../three/postprocessing/EffectComposer.js');
-},{"../../three/postprocessing/EffectComposer.js":63,"../../three/postprocessing/MaskPass.js":64,"../../three/postprocessing/RenderPass.js":65,"../../three/postprocessing/ShaderPass.js":66,"../../three/shaders/BlendShader.js":67,"../../three/shaders/CannyEdgeFilterPass.js":68,"../../three/shaders/CopyShader.js":69,"../../three/shaders/FXAAShader.js":70,"../../three/shaders/InvertThreshholdPass.js":71,"../../three/shaders/MedianFilter.js":72,"../../three/shaders/MultiplyBlendShader.js":73,"../../three/shaders/SSAOShader.js":74,"three":61}],37:[function(require,module,exports){
+
+},{"../../three/postprocessing/EffectComposer.js":64,"../../three/postprocessing/MaskPass.js":65,"../../three/postprocessing/RenderPass.js":66,"../../three/postprocessing/ShaderPass.js":67,"../../three/shaders/BlendShader.js":68,"../../three/shaders/CannyEdgeFilterPass.js":69,"../../three/shaders/CopyShader.js":70,"../../three/shaders/FXAAShader.js":71,"../../three/shaders/InvertThreshholdPass.js":72,"../../three/shaders/MedianFilter.js":73,"../../three/shaders/MultiplyBlendShader.js":74,"../../three/shaders/SSAOShader.js":75,"three":62}],38:[function(require,module,exports){
 var $ = require('jquery');
 
 module.exports = function(callback) {
@@ -2111,7 +2222,7 @@ module.exports = function(callback) {
         }
     }
 };
-},{"jquery":58}],38:[function(require,module,exports){
+},{"jquery":59}],39:[function(require,module,exports){
 var process=require("__browserify_process"),Buffer=require("__browserify_Buffer").Buffer;// Copyright (c) 2012, Mark Cavage. All rights reserved.
 
 var assert = require('assert');
@@ -2358,7 +2469,7 @@ Object.keys(assert).forEach(function (k) {
         };
 });
 
-},{"__browserify_Buffer":56,"__browserify_process":57,"assert":47,"stream":49,"util":52}],39:[function(require,module,exports){
+},{"__browserify_Buffer":57,"__browserify_process":58,"assert":48,"stream":50,"util":53}],40:[function(require,module,exports){
 module.exports = clamp
 
 function clamp(value, min, max) {
@@ -2367,7 +2478,7 @@ function clamp(value, min, max) {
     : (value < max ? max : value > min ? min : value)
 }
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 'use strict';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -2455,7 +2566,7 @@ module.exports = function extend() {
 };
 
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 
 
 //
@@ -2673,7 +2784,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -2746,7 +2857,7 @@ function onend() {
   timers.setImmediate(shims.bind(this.end, this));
 }
 
-},{"_shims":41,"_stream_readable":44,"_stream_writable":46,"timers":51,"util":52}],43:[function(require,module,exports){
+},{"_shims":42,"_stream_readable":45,"_stream_writable":47,"timers":52,"util":53}],44:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -2789,7 +2900,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"_stream_transform":45,"util":52}],44:[function(require,module,exports){
+},{"_stream_transform":46,"util":53}],45:[function(require,module,exports){
 var process=require("__browserify_process");// Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3710,7 +3821,7 @@ function endReadable(stream) {
   }
 }
 
-},{"__browserify_process":57,"_shims":41,"buffer":54,"events":48,"stream":49,"string_decoder":50,"timers":51,"util":52}],45:[function(require,module,exports){
+},{"__browserify_process":58,"_shims":42,"buffer":55,"events":49,"stream":50,"string_decoder":51,"timers":52,"util":53}],46:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3916,7 +4027,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"_stream_duplex":42,"util":52}],46:[function(require,module,exports){
+},{"_stream_duplex":43,"util":53}],47:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4286,7 +4397,7 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-},{"buffer":54,"stream":49,"timers":51,"util":52}],47:[function(require,module,exports){
+},{"buffer":55,"stream":50,"timers":52,"util":53}],48:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4603,7 +4714,7 @@ assert.doesNotThrow = function(block, /*optional*/message) {
 };
 
 assert.ifError = function(err) { if (err) {throw err;}};
-},{"_shims":41,"util":52}],48:[function(require,module,exports){
+},{"_shims":42,"util":53}],49:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4884,7 +4995,7 @@ EventEmitter.listenerCount = function(emitter, type) {
     ret = emitter._events[type].length;
   return ret;
 };
-},{"util":52}],49:[function(require,module,exports){
+},{"util":53}],50:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5013,7 +5124,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"_stream_duplex":42,"_stream_passthrough":43,"_stream_readable":44,"_stream_transform":45,"_stream_writable":46,"events":48,"util":52}],50:[function(require,module,exports){
+},{"_stream_duplex":43,"_stream_passthrough":44,"_stream_readable":45,"_stream_transform":46,"_stream_writable":47,"events":49,"util":53}],51:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5206,7 +5317,7 @@ function base64DetectIncompleteChar(buffer) {
   return incomplete;
 }
 
-},{"buffer":54}],51:[function(require,module,exports){
+},{"buffer":55}],52:[function(require,module,exports){
 try {
     // Old IE browsers that do not curry arguments
     if (!setTimeout.call) {
@@ -5325,7 +5436,7 @@ if (!exports.setImmediate) {
   };
 }
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5870,7 +5981,7 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":41}],53:[function(require,module,exports){
+},{"_shims":42}],54:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -5956,7 +6067,7 @@ exports.writeIEEE754 = function(buffer, value, offset, isBE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 var assert;
 exports.Buffer = Buffer;
 exports.SlowBuffer = Buffer;
@@ -7085,7 +7196,7 @@ Buffer.prototype.writeDoubleBE = function(value, offset, noAssert) {
   writeDouble(this, value, offset, true, noAssert);
 };
 
-},{"./buffer_ieee754":53,"assert":47,"base64-js":55}],55:[function(require,module,exports){
+},{"./buffer_ieee754":54,"assert":48,"base64-js":56}],56:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -7211,7 +7322,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -9591,7 +9702,7 @@ function hasOwnProperty(obj, prop) {
 },{"_shims":5}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -9646,7 +9757,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -18858,7 +18969,7 @@ return jQuery;
 
 }));
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};/**
  * @license
  * lodash 3.10.1 (Custom Build) <https://lodash.com/>
@@ -31211,7 +31322,7 @@ var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? 
   }
 }.call(this));
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 /*global define:false */
 /**
  * Copyright 2015 Craig Campbell
@@ -32234,7 +32345,7 @@ var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? 
     }
 }) (window, document);
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 var self = self || {};// File:src/Three.js
 
 /**
@@ -67382,7 +67493,7 @@ if (typeof exports !== 'undefined') {
   this['THREE'] = THREE;
 }
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 
 exports = module.exports = function() {
 	var ret = '', value;
@@ -67412,7 +67523,7 @@ exports.random = function() {
 };
 
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  */
@@ -67551,7 +67662,7 @@ THREE.EffectComposer.prototype = {
 
 };
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  */
@@ -67639,7 +67750,7 @@ THREE.ClearMaskPass.prototype = {
 
 };
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  */
@@ -67692,7 +67803,7 @@ THREE.RenderPass.prototype = {
 
 };
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  */
@@ -67753,7 +67864,7 @@ THREE.ShaderPass.prototype = {
 
 };
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  *
@@ -67806,7 +67917,7 @@ THREE.BlendShader = {
 
 };
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 /* Written by Arefin Mohiuddin - graphics n00b */
 
 THREE.CannyEdgeFilterPass = {
@@ -67851,7 +67962,7 @@ THREE.CannyEdgeFilterPass = {
 	].join("\n")
 
 };
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  *
@@ -67899,7 +68010,7 @@ THREE.CopyShader = {
 
 };
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  * @author davidedc / http://www.sketchpatch.net/
@@ -67989,7 +68100,7 @@ THREE.FXAAShader = {
 
 };
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 /* Written by Arefin Mohiuddin - graphics n00b */
 
 THREE.InvertThreshholdPass = {
@@ -68036,7 +68147,7 @@ THREE.InvertThreshholdPass = {
 	].join("\n")
 
 };
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 // Median Filter by graphics n00b Arefin Mohiuddin
 
 THREE.MedianFilter = {
@@ -68087,7 +68198,7 @@ THREE.MedianFilter = {
 	].join("\n")
 
 };
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 /* Written by Arefin Mohiuddin - graphics n00b */
 
 THREE.MultiplyBlendShader = {
@@ -68131,7 +68242,7 @@ THREE.MultiplyBlendShader = {
 	].join("\n")
 
 };
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 /**
  * @author alteredq / http://alteredqualia.com/
  *
@@ -68358,5 +68469,5 @@ THREE.SSAOShader = {
 
 };
 
-},{}]},{},[4])
+},{}]},{},[5])
 ;

@@ -148,11 +148,13 @@ var hashVertice = function(vertice, multiple) {
 //gridSize  grid size to use
 //faceMap   if not empty, populate this instance with face mapping info
 //edges     if not empty, populate this with Line3 array
+//ouputGeometry    output THREE.Geometry instead of THREE.BufferGeometry if set to true, defaults to false
 module.exports = function(chunk, params) {
     params = params || {};
     var meshers = params.meshers || {};
     var gridSize = params.gridSize || 10;
     var gap = params.gap || 0.0;
+    var ouputGeometry = params.ouputGeometry || true;
 
     var geometry = new THREE.Geometry();
 
@@ -244,7 +246,11 @@ module.exports = function(chunk, params) {
 
     var material = new THREE.MeshFaceMaterial(materials);
 
-    var object = new THREE.Mesh(new THREE.BufferGeometry().fromGeometry(geometry), material);
+    if (!ouputGeometry) {
+        geometry = new THREE.BufferGeometry().fromGeometry(geometry);
+    }
+
+    var object = new THREE.Mesh(geometry, material);
 
     return object;
 };

@@ -29,23 +29,31 @@ Component.prototype = {
 
     afterTick: defaultFunc,
 
-    getComponent: function(type) {
-        return getGame().entityManager.getOwningEntity(this.id).getComponent(type);
+    getComponents: function() {
+        return this.getOwningEntity.getComponents();
     },
 
-    getComponents: function() {
-        return getGame().entityManager.getOwningEntity(this.id).getComponents();
+    getComponent: function(type) {
+        return this.getOwningEntity().getComponent(type);
+    },
+
+    getEntityByName: function(name) {
+        return getGame().entityManager.getEntityByName(name);
     },
 
     getOwningEntity: function() {
         return getGame().entityManager.getOwningEntity(this.id);
     },
 
+    getParentEntity: function() {
+        return getGame().entityManager.getParentEntity(this.getOwningEntity().id);
+    },
+
     get transform() {
-        if(this._transform == null){
+        if (this._transform == null) {
             this._transform = getGame().entityManager.getOwningEntity(this.id).transform;
         }
-        
+
         return this._transform;
     },
 
@@ -53,12 +61,19 @@ Component.prototype = {
         return this.getGame();
     },
 
-    getGame: function() {
-        return getGame();
+    getWorldPosition: function() {
+        var position = this.transform.position;
+
+        var parentEntity = this.getParentEntity();
+        if (parentEntity == null) {
+            return position;
+        }
+
+        return position + this.getParentEntity().worldPosition;
     },
 
-    getEntityByName: function(name) {
-        return getGame().entityManager.getEntityByName(name);
+    getGame: function() {
+        return getGame();
     },
 
     getComponentByName: function(name) {
@@ -82,6 +97,7 @@ Component.prototype = {
         });
     },
 
+    //events
     _bind: function(event, type, func) {
         this.bindings.push({
             type: type,
@@ -129,6 +145,10 @@ Component.prototype = {
     bindMouseUp: function(func) {
         this.mouseupFunc.push(func);
         this.root.evaluateComponent(this);
+    },
+
+    addEntityFromPrefab: function(prefab){
+        return this.root.addEntityFromPrefab(prefab);
     }
 };
 

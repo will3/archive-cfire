@@ -5,7 +5,7 @@ var clamp = require('clamp');
 var CameraController = function() {
     Component.call(this);
 
-    this.distance = 1000;
+    this.distance = 100;
 
     this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');
     this.lookAt = new THREE.Vector3(0, 0, 0);

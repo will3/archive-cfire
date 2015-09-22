@@ -28,10 +28,12 @@ var Renderer = function(container) {
     this.camera.rotation.order = 'YXZ';
     this.camera.position.z = 100;
 
+    this.clearColor = 0xffffff;
+
     var renderer = new THREE.WebGLRenderer({
         antialias: true
     });
-    renderer.setClearColor(0xffffff);
+    renderer.setClearColor(this.clearColor);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -46,6 +48,10 @@ var Renderer = function(container) {
 
 Renderer.prototype = Object.create(System.prototype);
 Renderer.prototype.constructor = Renderer;
+
+Renderer.prototype.setClearColor = function(value) {
+    this.renderer.setClearColor(value);
+};
 
 Renderer.prototype.onWindowResize = function() {
     var width = window.innerWidth;
@@ -75,10 +81,10 @@ Renderer.prototype.tick = function(componentMap) {
 
         if (renderComponent.needsUpdate || !renderComponent.addedToScene) {
             if (this.objectMap[id] != null) {
-                this.removeObject(renderComponent);
+                this.removeObject3D(renderComponent);
             }
             if (renderComponent.object != null) {
-                this.addObject(renderComponent);
+                this.addObject3D(renderComponent);
             }
 
             renderComponent.addedToScene = true;
@@ -96,7 +102,11 @@ Renderer.prototype.tick = function(componentMap) {
     }
 };
 
-Renderer.prototype.addObject = function(renderComponent) {
+Renderer.prototype.destroyComponent = function(component) {
+    this.removeObject3D(component);
+};
+
+Renderer.prototype.addObject3D = function(renderComponent) {
     var object = renderComponent.object;
     this.scene.add(object);
     var objects = [object];
@@ -104,7 +114,7 @@ Renderer.prototype.addObject = function(renderComponent) {
     this.objectMap[renderComponent.id] = objects;
 };
 
-Renderer.prototype.removeObject = function(renderComponent) {
+Renderer.prototype.removeObject3D = function(renderComponent) {
     var objects = this.objectMap[renderComponent.id];
     if (objects == null) {
         return;

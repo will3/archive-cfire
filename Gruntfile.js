@@ -12,17 +12,38 @@ module.exports = function(grunt) {
                 dest: './site/public/javascripts/app.js'
             }
         },
+        mochaTest: {
+            test: {
+                src: ['./core/test/**/*.js']
+            }
+        },
         nodemon: {
             dev: {
                 script: './site/bin/www'
+            }
+        },
+        watch: {
+            js: {
+                options: {
+                    spawn: false
+                },
+                files: ['**/*.js'],
+                tasks: ['mochaTest']
+            }
+        },
+        concurrent: {
+            dev: ['mochaTest', 'nodemon', 'watchify'],
+            options: {
+                logConcurrentOutput: true
             }
         }
     });
 
     grunt.loadNpmTasks('grunt-watchify');
     grunt.loadNpmTasks('grunt-nodemon');
-    grunt.loadNpmTasks('grunt-keepalive');
+    grunt.loadNpmTasks('grunt-mocha-test');
+    grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-concurrent');
 
-    grunt.registerTask('default', ['watchify', 'nodemon', 'keepalive']);
-
+    grunt.registerTask('default', ['watchify', 'nodemon']);
 };

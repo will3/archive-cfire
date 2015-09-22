@@ -17,3 +17,26 @@ var Engine = {
 };
 
 module.exports = Engine;
+
+// var _ = require('lodash');
+// var extend = require('extend');
+
+// var Game = require('./game');
+// var Component = require('./component');
+
+// engine.start = function() {
+//     var game = new Game();
+//     game.start();
+// };
+
+// var components = {};
+// engine.registerComponent = function(name, func) {
+//     if (_.isFunction(func)) {
+//         this.components[name] = extend(new Component(), func());
+//         return;
+//     }
+
+//     this.components[name] = extend(new Component(), func);
+// };
+
+// module.exports = engine;

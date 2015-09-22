@@ -7,11 +7,14 @@ window.onload = function() {
         types: {
             'BlockModel': require('./components/blockmodel'),
             'InputController': require('./components/inputcontroller'),
-            'ShipController': require('./components/shipcontroller')
+            'ShipController': require('./components/shipcontroller'),
+            'SmokeTrail': require('./components/smoketrail')
         }
     });
 
-    for (var i = 0; i < 500; i++) {
+    game.renderer.setClearColor(0x000000);
+
+    for (var i = 0; i < 1; i++) {
         var frigate = game.addEntityFromPrefab('frigate');
         frigate.transform.position.x = Math.random() * 1000 - 500;
         frigate.transform.position.y = Math.random() * 1000 - 500;

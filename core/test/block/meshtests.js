@@ -7,7 +7,9 @@ describe('mesh', function() {
         var chunk = new Chunk();
         chunk.add(0, 0, 0, 'a block');
 
-        var object = mesh(chunk);
+        var object = mesh(chunk, {
+            ouputGeometry: false
+        });
 
         expect(object.geometry.faces.length).to.equal(6 * 2);
         expect(object.geometry.vertices.length).to.equal(8);
@@ -18,7 +20,9 @@ describe('mesh', function() {
         chunk.add(0, 0, 0, 'a block');
         chunk.add(1, 0, 0, 'neighbour');
 
-        var object = mesh(chunk);
+        var object = mesh(chunk, {
+            bufferGeometry: false
+        });
 
         expect(object.geometry.faces.length).to.equal(10 * 2);
         expect(object.geometry.vertices.length).to.equal(12);

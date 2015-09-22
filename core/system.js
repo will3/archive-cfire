@@ -17,9 +17,14 @@ System.prototype = {
 
     start: function() {},
 
-    tick: function() {},
+    //tick
+    tick: function(componentMap) {},
 
+    //called after tick
     afterTick: function() {},
+
+    //destroy component, called when component is removed
+    destroyComponent: function() {},
 
     getGame: function() {
         return getGame();

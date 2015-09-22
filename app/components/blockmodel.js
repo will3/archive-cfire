@@ -32,7 +32,9 @@ BlockModel.prototype.start = function() {
     switch (this.modelName) {
         case 'frigate':
             {
-                object = mesh(deserialize(frigate));
+                object = mesh(deserialize(frigate), {
+                    gridSize: 1
+                });
                 break;
             }
     }

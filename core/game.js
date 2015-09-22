@@ -14,7 +14,8 @@ var Console = require('./systems/console');
 //params
 //systems: systems this game should run, creates default set if left empty
 //keyMap: key map
-//types: type bindings
+//types: type bindings,
+//autoStart: automatically calls start when game is created, defaults to true
 var Game = function(params) {
     params = params || {};
 
@@ -49,8 +50,11 @@ var Game = function(params) {
     //map of component(s) relevant for systems
     this.componentMap = {};
 
-    //auto start
-    this.start();
+    var autoStart = params.autoStart || true;
+
+    if (params.autoStart !== false) {
+        this.start();
+    }
 };
 
 Game.prototype = {
@@ -82,7 +86,10 @@ Game.prototype = {
                     map = this.componentMap[key] = {};
                 }
 
-                delete map[component.id];
+                if (map[component.id] != null) {
+                    system.destroyComponent(component);
+                    delete map[component.id];
+                }
             }
         }.bind(this));
 

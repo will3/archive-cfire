@@ -5,9 +5,9 @@ var ScriptManager = function() {
     System.call(this);
 
     this.componentPredicate = function(component) {
-        return component.start != component.defaultFunc ||
+        return (component.start != component.defaultFunc ||
             component.tick != component.defaultFunc ||
-            component.afterTick != component.defaultFunc;
+            component.afterTick != component.defaultFunc);
     }
 };
 

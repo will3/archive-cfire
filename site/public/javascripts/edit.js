@@ -252,11 +252,13 @@ var hashVertice = function(vertice, multiple) {
 //gridSize  grid size to use
 //faceMap   if not empty, populate this instance with face mapping info
 //edges     if not empty, populate this with Line3 array
+//ouputGeometry    output THREE.Geometry instead of THREE.BufferGeometry if set to true, defaults to false
 module.exports = function(chunk, params) {
     params = params || {};
     var meshers = params.meshers || {};
     var gridSize = params.gridSize || 10;
     var gap = params.gap || 0.0;
+    var ouputGeometry = params.ouputGeometry || true;
 
     var geometry = new THREE.Geometry();
 
@@ -348,7 +350,11 @@ module.exports = function(chunk, params) {
 
     var material = new THREE.MeshFaceMaterial(materials);
 
-    var object = new THREE.Mesh(new THREE.BufferGeometry().fromGeometry(geometry), material);
+    if (!ouputGeometry) {
+        geometry = new THREE.BufferGeometry().fromGeometry(geometry);
+    }
+
+    var object = new THREE.Mesh(geometry, material);
 
     return object;
 };
@@ -413,23 +419,31 @@ Component.prototype = {
 
     afterTick: defaultFunc,
 
-    getComponent: function(type) {
-        return getGame().entityManager.getOwningEntity(this.id).getComponent(type);
+    getComponents: function() {
+        return this.getOwningEntity.getComponents();
     },
 
-    getComponents: function() {
-        return getGame().entityManager.getOwningEntity(this.id).getComponents();
+    getComponent: function(type) {
+        return this.getOwningEntity().getComponent(type);
+    },
+
+    getEntityByName: function(name) {
+        return getGame().entityManager.getEntityByName(name);
     },
 
     getOwningEntity: function() {
         return getGame().entityManager.getOwningEntity(this.id);
     },
 
+    getParentEntity: function() {
+        return getGame().entityManager.getParentEntity(this.getOwningEntity().id);
+    },
+
     get transform() {
-        if(this._transform == null){
+        if (this._transform == null) {
             this._transform = getGame().entityManager.getOwningEntity(this.id).transform;
         }
-        
+
         return this._transform;
     },
 
@@ -437,12 +451,19 @@ Component.prototype = {
         return this.getGame();
     },
 
-    getGame: function() {
-        return getGame();
+    getWorldPosition: function() {
+        var position = this.transform.position;
+
+        var parentEntity = this.getParentEntity();
+        if (parentEntity == null) {
+            return position;
+        }
+
+        return position + this.getParentEntity().worldPosition;
     },
 
-    getEntityByName: function(name) {
-        return getGame().entityManager.getEntityByName(name);
+    getGame: function() {
+        return getGame();
     },
 
     getComponentByName: function(name) {
@@ -466,6 +487,7 @@ Component.prototype = {
         });
     },
 
+    //events
     _bind: function(event, type, func) {
         this.bindings.push({
             type: type,
@@ -513,6 +535,10 @@ Component.prototype = {
     bindMouseUp: function(func) {
         this.mouseupFunc.push(func);
         this.root.evaluateComponent(this);
+    },
+
+    addEntityFromPrefab: function(prefab){
+        return this.root.addEntityFromPrefab(prefab);
     }
 };
 
@@ -564,7 +590,7 @@ var clamp = require('clamp');
 var CameraController = function() {
     Component.call(this);
 
-    this.distance = 1000;
+    this.distance = 100;
 
     this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');
     this.lookAt = new THREE.Vector3(0, 0, 0);
@@ -745,6 +771,29 @@ var Engine = {
 };
 
 module.exports = Engine;
+
+// var _ = require('lodash');
+// var extend = require('extend');
+
+// var Game = require('./game');
+// var Component = require('./component');
+
+// engine.start = function() {
+//     var game = new Game();
+//     game.start();
+// };
+
+// var components = {};
+// engine.registerComponent = function(name, func) {
+//     if (_.isFunction(func)) {
+//         this.components[name] = extend(new Component(), func());
+//         return;
+//     }
+
+//     this.components[name] = extend(new Component(), func);
+// };
+
+// module.exports = engine;
 },{"./block/chunk":1,"./block/deserialize":2,"./block/mesh":3,"./block/serialize":4,"./component":5,"./components/cameracontroller":7,"./components/collisionbody":8,"./components/lightcomponent":9,"./components/rendercomponent":10,"./components/transformcomponent":12,"./game":16}],14:[function(require,module,exports){
 var uuid = require('uuid-v4');
 var _ = require('lodash');
@@ -799,6 +848,7 @@ Entity.prototype = {
         }
 
         if (_.isString(type)) {
+            var types = require('./macros/types');
             var constructor = types[type];
             if (constructor != null) {
                 return _.find(this.getComponents(), function(component) {
@@ -812,10 +862,6 @@ Entity.prototype = {
 
     getComponents: function() {
         return getGame().entityManager.getComponents(this.id);
-    },
-
-    getEntityByName: function(name) {
-        return getGame().entityManager.getEntityByName(name);
     }
 }
 
@@ -1003,7 +1049,8 @@ var Console = require('./systems/console');
 //params
 //systems: systems this game should run, creates default set if left empty
 //keyMap: key map
-//types: type bindings
+//types: type bindings,
+//autoStart: automatically calls start when game is created, defaults to true
 var Game = function(params) {
     params = params || {};
 
@@ -1038,8 +1085,11 @@ var Game = function(params) {
     //map of component(s) relevant for systems
     this.componentMap = {};
 
-    //auto start
-    this.start();
+    var autoStart = params.autoStart || true;
+
+    if (params.autoStart !== false) {
+        this.start();
+    }
 };
 
 Game.prototype = {
@@ -1071,7 +1121,10 @@ Game.prototype = {
                     map = this.componentMap[key] = {};
                 }
 
-                delete map[component.id];
+                if (map[component.id] != null) {
+                    system.destroyComponent(component);
+                    delete map[component.id];
+                }
             }
         }.bind(this));
 
@@ -1318,9 +1371,14 @@ System.prototype = {
 
     start: function() {},
 
-    tick: function() {},
+    //tick
+    tick: function(componentMap) {},
 
+    //called after tick
     afterTick: function() {},
+
+    //destroy component, called when component is removed
+    destroyComponent: function() {},
 
     getGame: function() {
         return getGame();
@@ -1759,10 +1817,12 @@ var Renderer = function(container) {
     this.camera.rotation.order = 'YXZ';
     this.camera.position.z = 100;
 
+    this.clearColor = 0xffffff;
+
     var renderer = new THREE.WebGLRenderer({
         antialias: true
     });
-    renderer.setClearColor(0xffffff);
+    renderer.setClearColor(this.clearColor);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -1777,6 +1837,10 @@ var Renderer = function(container) {
 
 Renderer.prototype = Object.create(System.prototype);
 Renderer.prototype.constructor = Renderer;
+
+Renderer.prototype.setClearColor = function(value) {
+    this.renderer.setClearColor(value);
+};
 
 Renderer.prototype.onWindowResize = function() {
     var width = window.innerWidth;
@@ -1806,10 +1870,10 @@ Renderer.prototype.tick = function(componentMap) {
 
         if (renderComponent.needsUpdate || !renderComponent.addedToScene) {
             if (this.objectMap[id] != null) {
-                this.removeObject(renderComponent);
+                this.removeObject3D(renderComponent);
             }
             if (renderComponent.object != null) {
-                this.addObject(renderComponent);
+                this.addObject3D(renderComponent);
             }
 
             renderComponent.addedToScene = true;
@@ -1827,7 +1891,11 @@ Renderer.prototype.tick = function(componentMap) {
     }
 };
 
-Renderer.prototype.addObject = function(renderComponent) {
+Renderer.prototype.destroyComponent = function(component) {
+    this.removeObject3D(component);
+};
+
+Renderer.prototype.addObject3D = function(renderComponent) {
     var object = renderComponent.object;
     this.scene.add(object);
     var objects = [object];
@@ -1835,7 +1903,7 @@ Renderer.prototype.addObject = function(renderComponent) {
     this.objectMap[renderComponent.id] = objects;
 };
 
-Renderer.prototype.removeObject = function(renderComponent) {
+Renderer.prototype.removeObject3D = function(renderComponent) {
     var objects = this.objectMap[renderComponent.id];
     if (objects == null) {
         return;
@@ -1855,9 +1923,9 @@ var ScriptManager = function() {
     System.call(this);
 
     this.componentPredicate = function(component) {
-        return component.start != component.defaultFunc ||
+        return (component.start != component.defaultFunc ||
             component.tick != component.defaultFunc ||
-            component.afterTick != component.defaultFunc;
+            component.afterTick != component.defaultFunc);
     }
 };
 
@@ -1926,6 +1994,7 @@ require('../../three/postprocessing/RenderPass.js');
 require('../../three/postprocessing/ShaderPass.js');
 require('../../three/postprocessing/MaskPass.js');
 require('../../three/postprocessing/EffectComposer.js');
+
 },{"../../three/postprocessing/EffectComposer.js":83,"../../three/postprocessing/MaskPass.js":84,"../../three/postprocessing/RenderPass.js":85,"../../three/postprocessing/ShaderPass.js":86,"../../three/shaders/BlendShader.js":87,"../../three/shaders/CannyEdgeFilterPass.js":88,"../../three/shaders/CopyShader.js":89,"../../three/shaders/FXAAShader.js":90,"../../three/shaders/InvertThreshholdPass.js":91,"../../three/shaders/MedianFilter.js":92,"../../three/shaders/MultiplyBlendShader.js":93,"../../three/shaders/SSAOShader.js":94,"three":81}],32:[function(require,module,exports){
 var $ = require('jquery');
 

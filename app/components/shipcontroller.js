@@ -25,12 +25,12 @@ ShipController.prototype.start = function() {
     this.rigidBody = this.getComponent('RigidBody');
     assert.object(this.rigidBody, 'rigidBody');
 
-    this.rigidBody.mass = 10;
+    this.rigidBody.mass = 100;
 };
 
 ShipController.prototype.tick = function() {
     this.accelerate(1);
-    this.bank(0.1);
+    this.bank(1);
 
     //update yaw with bank
     var rotation = this.transform.rotation;

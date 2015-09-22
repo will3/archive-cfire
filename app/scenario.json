@@ -1,12 +1,14 @@
 {
     "prefabs": {
         "frigate": {
-            "name": "frigate",
             "components": [{
                 "type": "BlockModel",
                 "modelName": "frigate"
-            }, "RenderComponent", "ShipController", "RigidBody"]
-        }
+            }, "RenderComponent", "ShipController", "RigidBody", "SmokeTrail"]
+        },
+        "smoke": {
+            "components": ["RenderComponent"]
+        },
     },
     "entities": ["frigate", {
         "name": "game",

@@ -51,6 +51,7 @@ Entity.prototype = {
         }
 
         if (_.isString(type)) {
+            var types = require('./macros/types');
             var constructor = types[type];
             if (constructor != null) {
                 return _.find(this.getComponents(), function(component) {
@@ -64,10 +65,6 @@ Entity.prototype = {
 
     getComponents: function() {
         return getGame().entityManager.getComponents(this.id);
-    },
-
-    getEntityByName: function(name) {
-        return getGame().entityManager.getEntityByName(name);
     }
 }
 
