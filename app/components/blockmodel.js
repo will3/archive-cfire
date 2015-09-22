@@ -6,6 +6,8 @@ var mesh = Engine.Block.mesh;
 
 var frigate = require('../resources/models/frigate.json');
 
+var objectCaches = {};
+
 var BlockModel = function() {
     Component.call(this);
 
@@ -21,6 +23,11 @@ BlockModel.prototype.start = function() {
     this.renderComponent = this.getComponent('RenderComponent');
     assert.object(this.renderComponent, 'renderComponent');
 
+    var objectCache = objectCaches[this.modelName];
+    if (objectCache != null) {
+        this.renderComponent.object = new THREE.Mesh(objectCache.geometry, objectCache.material);
+    }
+
     var object = null;
     switch (this.modelName) {
         case 'frigate':
@@ -29,6 +36,8 @@ BlockModel.prototype.start = function() {
                 break;
             }
     }
+
+    objectCaches[this.modelName] = object;
 
     this.renderComponent.object = object;
 };

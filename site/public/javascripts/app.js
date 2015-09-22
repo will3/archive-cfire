@@ -7,6 +7,8 @@ var mesh = Engine.Block.mesh;
 
 var frigate = require('../resources/models/frigate.json');
 
+var objectCaches = {};
+
 var BlockModel = function() {
     Component.call(this);
 
@@ -22,6 +24,11 @@ BlockModel.prototype.start = function() {
     this.renderComponent = this.getComponent('RenderComponent');
     assert.object(this.renderComponent, 'renderComponent');
 
+    var objectCache = objectCaches[this.modelName];
+    if (objectCache != null) {
+        this.renderComponent.object = new THREE.Mesh(objectCache.geometry, objectCache.material);
+    }
+
     var object = null;
     switch (this.modelName) {
         case 'frigate':
@@ -30,6 +37,8 @@ BlockModel.prototype.start = function() {
                 break;
             }
     }
+
+    objectCaches[this.modelName] = object;
 
     this.renderComponent.object = object;
 };
@@ -56,18 +65,60 @@ InputController.prototype.start = function(){
 
 module.exports = InputController;
 },{"../../core/engine":18,"assert-plus":38}],3:[function(require,module,exports){
+var assert = require('assert-plus');
+var clamp = require('clamp');
+
 var Engine = require('../../core/engine');
 var Component = Engine.Component;
 
 var ShipController = function() {
     Component.call(this);
+
+    this.rigidBody = null;
+
+    this.maxRoll = Math.PI / 4;
+    this.minRoll = -Math.PI / 4;
+
+    this.rollFriction = 1.0;
+    this.rollFrictionCurve = 0.05;
+
+    this.yawSpeed = 0.02;
 };
 
 ShipController.prototype = Object.create(Component.prototype);
 ShipController.prototype.constructor = ShipController;
 
+ShipController.prototype.start = function() {
+    this.rigidBody = this.getComponent('RigidBody');
+    assert.object(this.rigidBody, 'rigidBody');
+
+    this.rigidBody.mass = 10;
+};
+
+ShipController.prototype.tick = function() {
+    this.accelerate(1);
+    this.bank(0.1);
+
+    //update yaw with bank
+    var rotation = this.transform.rotation;
+    rotation.y += Math.sin(rotation.z) * this.yawSpeed;
+};
+
+ShipController.prototype.accelerate = function(amount) {
+    var unitFacing = new THREE.Vector3(0, 0, 1).applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(this.transform.rotation));
+    this.rigidBody.applyForce(unitFacing.multiplyScalar(-amount));
+};
+
+ShipController.prototype.bank = function(amount) {
+    var rotation = this.transform.rotation;
+    rotation.z += amount;
+    rotation.z = clamp(rotation.z, this.minRoll, this.maxRoll);
+
+    rotation.z *= Math.pow(Math.cos(rotation.z / this.maxRoll), this.rollFrictionCurve) * this.rollFriction;
+};
+
 module.exports = ShipController;
-},{"../../core/engine":18}],4:[function(require,module,exports){
+},{"../../core/engine":18,"assert-plus":38,"clamp":39}],4:[function(require,module,exports){
 var Engine = require('../core/engine');
 var Game = Engine.Game;
 
@@ -80,18 +131,17 @@ window.onload = function() {
             'ShipController': require('./components/shipcontroller')
         }
     });
+
+    for (var i = 0; i < 500; i++) {
+        var frigate = game.addEntityFromPrefab('frigate');
+        frigate.transform.position.x = Math.random() * 1000 - 500;
+        frigate.transform.position.y = Math.random() * 1000 - 500;
+        frigate.transform.position.z = Math.random() * 1000 - 500;
+    }
+
 }
 },{"../core/engine":18,"./components/blockmodel":1,"./components/inputcontroller":2,"./components/shipcontroller":3,"./scenario.json":6}],5:[function(require,module,exports){
-module.exports=module.exports=﻿[
-    [{
-        "scale": {
-            "x": 1,
-            "y": 1,
-            "z": 1
-        },
-        "color": 3946549
-    }], "0,0,2,0", "1,0,1,0", "1,0,2,0", "1,0,3,0", "2,0,2,0", "3,0,0,0", "3,0,1,0", "3,0,2,0", "3,0,3,0", "3,0,4,0", "4,0,2,0", "5,0,2,0", "-4,0,2,0", "-3,0,0,0", "-3,0,1,0", "-3,0,2,0", "-3,0,3,0", "-3,0,4,0", "-2,0,2,0", "-1,0,1,0", "-1,0,2,0", "-1,0,3,0", "-5,0,2,0"
-]
+module.exports=﻿[[{"scale":{"x":1,"y":1,"z":1},"color":3946549},{"scale":{"x":1,"y":0.75,"z":1},"color":3946549},{"scale":{"x":0.4,"y":0.4,"z":1},"color":3946549},{"scale":{"x":0.8,"y":0.8,"z":1},"color":3946549},{"scale":{"x":1,"y":0.5,"z":1},"color":3946549}],"0,0,2,0","1,0,1,0","1,0,2,0","1,0,3,0","2,0,2,1","3,0,0,2","3,0,1,3","3,0,2,0","3,0,3,0","3,0,4,0","4,0,2,4","5,0,2,4","-4,0,2,4","-3,0,0,2","-3,0,1,3","-3,0,2,0","-3,0,3,0","-3,0,4,0","-2,0,2,1","-1,0,1,0","-1,0,2,0","-1,0,3,0","-5,0,2,4"]
 },{}],6:[function(require,module,exports){
 module.exports=module.exports={
     "prefabs": {
@@ -336,7 +386,7 @@ var hasGap = function(block) {
     if (block.scale == null) {
         return false;
     }
-    
+
     return block.scale.x != 1 || block.scale.y != 1 || block.scale.z != 1;
 };
 
@@ -390,16 +440,11 @@ module.exports = function(chunk, params) {
         });
 
         if (materialIndex == -1) {
-            var lightness = new THREE.Color(block.color).getHSL().l;
-
-            var emissiveFactor = 0.3;
-            var color = new THREE.Color(block.color).offsetHSL(0, 0, -lightness * emissiveFactor);
-            var emissive = new THREE.Color(block.color).offsetHSL(0, 0, -lightness * (1 - emissiveFactor));
-
-            materials.push(new THREE.MeshLambertMaterial({
-                emissive: emissive,
+            var material = new THREE.MeshBasicMaterial({
                 color: color
-            }));
+            });
+
+            materials.push(material);
 
             materialIndex = materials.length - 1;
         }
@@ -466,7 +511,7 @@ module.exports = function(chunk, params) {
 
     var material = new THREE.MeshFaceMaterial(materials);
 
-    var object = new THREE.Mesh(geometry, material);
+    var object = new THREE.Mesh(new THREE.BufferGeometry().fromGeometry(geometry), material);
 
     return object;
 };
@@ -514,6 +559,8 @@ var Component = function() {
     this.mousemoveFunc = [];
     this.mousedownFunc = [];
     this.mouseupFunc = [];
+
+    this._transform = null;
 };
 
 var defaultFunc = function() {};
@@ -542,7 +589,11 @@ Component.prototype = {
     },
 
     get transform() {
-        return getGame().entityManager.getOwningEntity(this.id).transform;
+        if(this._transform == null){
+            this._transform = getGame().entityManager.getOwningEntity(this.id).transform;
+        }
+        
+        return this._transform;
     },
 
     get root() {
@@ -812,6 +863,11 @@ var RigidBody = function() {
 
 RigidBody.prototype = Object.create(Component.prototype);
 RigidBody.prototype.constructor = RigidBody;
+
+RigidBody.prototype.applyForce = function(force) {
+    var acceleration = force.clone().multiplyScalar(1 / this.mass);
+    this.acceleration.add(acceleration);
+};
 
 module.exports = RigidBody;
 },{"../component":11,"assert-plus":38,"three":61}],17:[function(require,module,exports){
@@ -1116,7 +1172,7 @@ var Game = function(params) {
     this.keyMap = params.keyMap;
 
     //tick rate
-    this.tickRate = params.tickRate || 60.0;
+    this.tickRate = params.tickRate || 48.0;
 
     //scenario
     this.scenario = params.scenario;
@@ -1251,6 +1307,16 @@ Game.prototype = {
                 map[component.id] = component;
             }
         }
+    },
+
+    addEntityFromPrefab: function(key) {
+        var prefab = this.scenario.prefabs[key];
+        if (prefab == null) {
+            throw "can't load prefab";
+        }
+
+        var loader = require('./loader')(this);
+        return loader.addEntity(this, prefab);
     }
 };
 
@@ -1344,6 +1410,8 @@ module.exports = function(game) {
             components.forEach(function(component) {
                 entity.addComponent(self.getComponent(component));
             });
+
+            return entity;
         },
 
         getComponent: function(data) {
@@ -1796,6 +1864,8 @@ var Physics = function() {
     this.componentPredicate = function(component) {
         return component instanceof RigidBody;
     }
+
+    this.friction = 0.99;
 };
 
 Physics.prototype = Object.create(System.prototype);
@@ -1808,12 +1878,14 @@ Physics.prototype.start = function() {
 Physics.prototype.tick = function(componentMap) {
     for (var id in componentMap) {
         var component = componentMap[id];
-        this.step(component);
+        this.stepComponent(component);
     }
 };
 
-Physics.prototype.step = function(component) {
-
+Physics.prototype.stepComponent = function(component) {
+    component.velocity.add(component.acceleration).multiplyScalar(this.friction);
+    component.transform.position.add(component.velocity);
+    component.acceleration = new THREE.Vector3(0, 0, 0);
 };
 
 module.exports = Physics;

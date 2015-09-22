@@ -21,4 +21,9 @@ var RigidBody = function() {
 RigidBody.prototype = Object.create(Component.prototype);
 RigidBody.prototype.constructor = RigidBody;
 
+RigidBody.prototype.applyForce = function(force) {
+    var acceleration = force.clone().multiplyScalar(1 / this.mass);
+    this.acceleration.add(acceleration);
+};
+
 module.exports = RigidBody;

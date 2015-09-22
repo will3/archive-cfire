@@ -12,6 +12,8 @@ var Component = function() {
     this.mousemoveFunc = [];
     this.mousedownFunc = [];
     this.mouseupFunc = [];
+
+    this._transform = null;
 };
 
 var defaultFunc = function() {};
@@ -40,7 +42,11 @@ Component.prototype = {
     },
 
     get transform() {
-        return getGame().entityManager.getOwningEntity(this.id).transform;
+        if(this._transform == null){
+            this._transform = getGame().entityManager.getOwningEntity(this.id).transform;
+        }
+        
+        return this._transform;
     },
 
     get root() {

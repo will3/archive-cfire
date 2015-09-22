@@ -41,6 +41,8 @@ module.exports = function(game) {
             components.forEach(function(component) {
                 entity.addComponent(self.getComponent(component));
             });
+
+            return entity;
         },
 
         getComponent: function(data) {

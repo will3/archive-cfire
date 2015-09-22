@@ -7,6 +7,8 @@ var Physics = function() {
     this.componentPredicate = function(component) {
         return component instanceof RigidBody;
     }
+
+    this.friction = 0.99;
 };
 
 Physics.prototype = Object.create(System.prototype);
@@ -19,12 +21,14 @@ Physics.prototype.start = function() {
 Physics.prototype.tick = function(componentMap) {
     for (var id in componentMap) {
         var component = componentMap[id];
-        this.step(component);
+        this.stepComponent(component);
     }
 };
 
-Physics.prototype.step = function(component) {
-
+Physics.prototype.stepComponent = function(component) {
+    component.velocity.add(component.acceleration).multiplyScalar(this.friction);
+    component.transform.position.add(component.velocity);
+    component.acceleration = new THREE.Vector3(0, 0, 0);
 };
 
 module.exports = Physics;

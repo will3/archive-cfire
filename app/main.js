@@ -10,4 +10,12 @@ window.onload = function() {
             'ShipController': require('./components/shipcontroller')
         }
     });
+
+    for (var i = 0; i < 500; i++) {
+        var frigate = game.addEntityFromPrefab('frigate');
+        frigate.transform.position.x = Math.random() * 1000 - 500;
+        frigate.transform.position.y = Math.random() * 1000 - 500;
+        frigate.transform.position.z = Math.random() * 1000 - 500;
+    }
+
 }

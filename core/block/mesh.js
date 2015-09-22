@@ -119,7 +119,7 @@ var hasGap = function(block) {
     if (block.scale == null) {
         return false;
     }
-    
+
     return block.scale.x != 1 || block.scale.y != 1 || block.scale.z != 1;
 };
 
@@ -173,16 +173,11 @@ module.exports = function(chunk, params) {
         });
 
         if (materialIndex == -1) {
-            var lightness = new THREE.Color(block.color).getHSL().l;
-
-            var emissiveFactor = 0.3;
-            var color = new THREE.Color(block.color).offsetHSL(0, 0, -lightness * emissiveFactor);
-            var emissive = new THREE.Color(block.color).offsetHSL(0, 0, -lightness * (1 - emissiveFactor));
-
-            materials.push(new THREE.MeshLambertMaterial({
-                emissive: emissive,
+            var material = new THREE.MeshBasicMaterial({
                 color: color
-            }));
+            });
+
+            materials.push(material);
 
             materialIndex = materials.length - 1;
         }
@@ -249,7 +244,7 @@ module.exports = function(chunk, params) {
 
     var material = new THREE.MeshFaceMaterial(materials);
 
-    var object = new THREE.Mesh(geometry, material);
+    var object = new THREE.Mesh(new THREE.BufferGeometry().fromGeometry(geometry), material);
 
     return object;
 };

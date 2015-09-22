@@ -22,7 +22,7 @@ var Game = function(params) {
     this.keyMap = params.keyMap;
 
     //tick rate
-    this.tickRate = params.tickRate || 60.0;
+    this.tickRate = params.tickRate || 48.0;
 
     //scenario
     this.scenario = params.scenario;
@@ -157,6 +157,16 @@ Game.prototype = {
                 map[component.id] = component;
             }
         }
+    },
+
+    addEntityFromPrefab: function(key) {
+        var prefab = this.scenario.prefabs[key];
+        if (prefab == null) {
+            throw "can't load prefab";
+        }
+
+        var loader = require('./loader')(this);
+        return loader.addEntity(this, prefab);
     }
 };
 
